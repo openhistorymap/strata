@@ -1,0 +1,22 @@
+Strata
+Copyright 2026 Open History Map contributors
+
+This product includes software developed as part of the Open History Map
+project (https://www.openhistorymap.org/), and uses harris-mcp
+(https://github.com/openhistorymap/harris-mcp, Apache-2.0) for its
+Harris-matrix file readers.
+
+Data
+----
+data/sources/kenan-tepe/ and the Kenan Tepe records in data/strata.rl are
+derived from:
+
+  Bradley Parker and Peter Cobb (eds.), "Kenan Tepe". Released 2012-02-27.
+  Open Context. https://doi.org/10.6078/M7H41PBJ
+  Licence: Creative Commons Attribution 4.0 International (CC BY 4.0),
+  https://creativecommons.org/licenses/by/4.0/
+
+Changes made: records were fetched through the Open Context API, reduced to
+the fields Strata uses, and their stratigraphic statements were merged into
+graph relationships (each keeps the record that stated it and its URI).
+Taxon identifiers link to GBIF (https://www.gbif.org/).

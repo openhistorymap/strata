@@ -1,0 +1,192 @@
+"""strata: build, check and question the excavation graph.
+
+    strata build                      rebuild data/strata.rl from data/sources/* and run every check
+    strata ask overview               one line per site
+    strata ask issues --site kenan-tepe
+    strata ask describe "Area D/Trench 6/Locus 20"
+    strata ask relation "Area F/Trench 7/Locus 7042" "Area F/Trench 7/Locus 7044"
+    strata query "MATCH (c:Context) RETURN c.type, count(*)"     read-only Cypher
+    strata mcp                        serve the store to an agent over MCP (stdio)
+"""
+
+from __future__ import annotations
+
+import argparse
+import json
+import sys
+import time
+from pathlib import Path
+
+from . import queries as Q
+from .checks import run_checks
+from .sites import OPEN_CONTEXT, RAW, SOURCES, source_sites
+from .store import DEFAULT_DB, Store
+
+
+def _print(result) -> None:
+    if isinstance(result, list) and result and all(isinstance(r, dict) for r in result) \
+            and all(not isinstance(v, (dict, list)) or len(json.dumps(v)) < 60 for r in result for v in r.values()):
+        cols = list(result[0].keys())
+        cells = [[json.dumps(r.get(c)) if isinstance(r.get(c), (dict, list)) else
+                  ("" if r.get(c) is None else str(r.get(c))) for c in cols] for r in result]
+        widths = [min(max(len(c), *(len(row[i]) for row in cells)), 90) for i, c in enumerate(cols)]
+        print("  ".join(c.ljust(w) for c, w in zip(cols, widths)))
+        print("  ".join("-" * w for w in widths))
+        for row in cells:
+            print("  ".join(v[:w].ljust(w) for v, w in zip(row, widths)))
+        return
+    print(json.dumps(result, indent=2, ensure_ascii=False, default=str))
+
+
+def cmd_fetch(args) -> None:
+    from .importers.opencontext import fetch, fetch_query
+    from .importers.opencontext_normalise import normalise
+    cfg = OPEN_CONTEXT[args.site]
+    raw = RAW / args.site
+    fetch(cfg["project"], cfg["units"], raw / "loci")
+    for cat, attrs in cfg["finds"].items():
+        fetch_query(cfg["project"], cat, raw / f"finds-{cat.split('cat-')[-1]}.jsonl", attributes=attrs)
+    normalise(args.site, cfg["prefix"], raw, SOURCES / args.site)
+
+
+def cmd_build(args) -> None:
+    from .importers.load import import_site
+    db = Path(args.db)
+    tmp = db.with_name(db.stem + ".building.rl")  # the .rl suffix keeps Relate in single-file mode
+    if tmp.exists():
+        tmp.unlink()
+    t0 = time.time()
+    with Store(tmp) as store:
+        store.apply_schema()
+        for site in args.sites or source_sites():
+            t = time.time()
+            counts = import_site(store, SOURCES / site)
+            summary = run_checks(store, site)
+            print(f"{site}: {counts}\n  checks: {summary}  ({time.time() - t:.1f}s)", file=sys.stderr)
+    tmp.replace(db)
+    print(f"built {db} in {time.time() - t0:.1f}s", file=sys.stderr)
+
+
+def cmd_import_matrix(args) -> None:
+    from .importers.harris import matrix_source
+    from .importers.load import import_site
+    site = {"id": args.site, "name": args.name or args.site, "license": args.license,
+            "license_label": args.license_label, "source": args.source, "source_uri": args.source_uri}
+    with Store(args.db) as store:
+        store.apply_schema()
+        print(import_site(store, matrix_source(args.path, {k: v for k, v in site.items() if v}, args.format)))
+        print(run_checks(store, args.site))
+
+
+def cmd_check(args) -> None:
+    with Store(args.db) as store:
+        for site in args.sites or [r["site"] for r in Q.overview(store)]:
+            _print({site: run_checks(store, site)})
+
+
+def cmd_ask(args) -> None:
+    with Store(args.db, read_only=True) as store:
+        q, a, site = args.question, args.args, args.site
+        try:
+            if q == "overview":
+                result = Q.overview(store)
+            elif q == "issues":
+                result = Q.issues(store, site, args.kind, args.limit)
+            elif q == "describe":
+                result = Q.describe(store, a[0], site)
+            elif q == "below":
+                result = Q.below(store, a[0], site, args.limit)
+            elif q == "above":
+                result = Q.above(store, a[0], site, args.limit)
+            elif q == "relation":
+                result = Q.relation(store, a[0], a[1], site)
+            elif q == "bracket":
+                result = Q.date_bracket(store, a[0], site)
+            elif q == "provenance":
+                result = Q.provenance(store, a[0], site)
+            elif q == "periods":
+                result = Q.period_sequence(store, site or a[0])
+            else:
+                raise SystemExit(f"unknown question {q!r}")
+        except Q.NotFound as e:
+            raise SystemExit(str(e))
+        except IndexError:
+            raise SystemExit(f"'{q}' needs more arguments; see strata ask --help")
+    _print(result)
+
+
+def cmd_query(args) -> None:
+    with Store(args.db) as store:
+        try:
+            out = store.read(args.cypher, json.loads(args.params) if args.params else None, limit=args.limit)
+        except PermissionError as e:
+            raise SystemExit(str(e))
+    _print(out["rows"])
+    if out["truncated"]:
+        print(f"... truncated at {args.limit} rows", file=sys.stderr)
+
+
+def cmd_stats(args) -> None:
+    with Store(args.db, read_only=True) as store:
+        _print(store.stats())
+
+
+def cmd_mcp(args) -> None:
+    from .mcp_server import serve
+    serve(args.db)
+
+
+def main(argv: list[str] | None = None) -> None:
+    p = argparse.ArgumentParser(prog="strata", description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    p.add_argument("--db", default=str(DEFAULT_DB), help="Relate store file (default: data/strata.rl)")
+    sub = p.add_subparsers(dest="cmd", required=True)
+
+    s = sub.add_parser("fetch", help="download a site from Open Context and normalise it into data/sources/")
+    s.add_argument("site", choices=sorted(OPEN_CONTEXT))
+    s.set_defaults(func=cmd_fetch)
+
+    s = sub.add_parser("build", help="rebuild the store from data/sources/ and run all checks")
+    s.add_argument("sites", nargs="*", help="sites to include (default: all)")
+    s.set_defaults(func=cmd_build)
+
+    s = sub.add_parser("import-matrix", help="add a Harris-matrix file (hmcx, hmc, hm data package, csv, xlsx, HMDP)")
+    s.add_argument("path")
+    s.add_argument("--site", required=True, help="site id, e.g. ulm-eggingen")
+    s.add_argument("--name")
+    s.add_argument("--format", default="auto")
+    s.add_argument("--license")
+    s.add_argument("--license-label")
+    s.add_argument("--source")
+    s.add_argument("--source-uri")
+    s.set_defaults(func=cmd_import_matrix)
+
+    s = sub.add_parser("check", help="recompute matrix depth, contested edges and issues")
+    s.add_argument("sites", nargs="*")
+    s.set_defaults(func=cmd_check)
+
+    s = sub.add_parser("ask", help="named questions: overview, issues, describe, below, above, relation, bracket, provenance, periods")
+    s.add_argument("question")
+    s.add_argument("args", nargs="*")
+    s.add_argument("--site")
+    s.add_argument("--kind", help="issue kind, for 'issues'")
+    s.add_argument("--limit", type=int, default=50)
+    s.set_defaults(func=cmd_ask)
+
+    s = sub.add_parser("query", help="run read-only Cypher (always rolled back)")
+    s.add_argument("cypher")
+    s.add_argument("--params", help="JSON object of parameters")
+    s.add_argument("--limit", type=int, default=100)
+    s.set_defaults(func=cmd_query)
+
+    s = sub.add_parser("stats", help="node and relationship counts")
+    s.set_defaults(func=cmd_stats)
+
+    s = sub.add_parser("mcp", help="serve the store over MCP (stdio)")
+    s.set_defaults(func=cmd_mcp)
+
+    args = p.parse_args(argv)
+    args.func(args)
+
+
+if __name__ == "__main__":
+    main()

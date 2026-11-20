@@ -1,0 +1,13 @@
+{
+  "id": "kenan-tepe",
+  "name": "Kenan Tepe",
+  "description": "Multi-period mound on the Upper Tigris, south-eastern Turkey, excavated 1998-2007 by the Upper Tigris Archaeological Research Project.",
+  "country": "Turkey",
+  "location": [37.8305893, 40.813221],
+  "wikidata": "https://www.wikidata.org/entity/Q6098540",
+  "source": "Bradley Parker and Peter Cobb (eds.), Kenan Tepe. Open Context, 2012.",
+  "source_uri": "https://doi.org/10.6078/M7H41PBJ",
+  "license": "https://creativecommons.org/licenses/by/4.0",
+  "license_label": "CC BY 4.0",
+  "recording_system": "locus"
+}
