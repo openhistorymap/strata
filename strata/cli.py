@@ -70,7 +70,7 @@ def cmd_build(args) -> None:
         from .web_export import export_web
         with Store(db, read_only=True) as store:
             out = export_web(store, DEFAULT_DB.parent.parent / "web" / "data")
-        print(f"refreshed the viewer data: {', '.join(v['file'] for v in out.values())}", file=sys.stderr)
+        print(f"refreshed the viewer data in web/data/ ({', '.join(out)})", file=sys.stderr)
 
 
 def cmd_import_matrix(args) -> None:
@@ -138,9 +138,14 @@ def cmd_stats(args) -> None:
 
 
 def cmd_export_web(args) -> None:
-    from .web_export import export_web
+    from .web_export import export_bundle, export_web
     with Store(args.db, read_only=True) as store:
-        _print(export_web(store, Path(args.out)))
+        if args.bundle:
+            if not args.site:
+                raise SystemExit("--bundle needs --site")
+            _print(export_bundle(store, args.site, Path(args.bundle)))
+        else:
+            _print(export_web(store, Path(args.out)))
 
 
 def cmd_mcp(args) -> None:
@@ -194,7 +199,11 @@ def main(argv: list[str] | None = None) -> None:
     s.set_defaults(func=cmd_stats)
 
     s = sub.add_parser("export-web", help="dump the store as JSON for the browser viewer (web/)")
-    s.add_argument("--out", default=str(Path(__file__).resolve().parent.parent / "web" / "data"))
+    s.add_argument("--out", default=str(Path(__file__).resolve().parent.parent / "web" / "data"),
+                   help="folder for <site>/{core,finds}.json and datasets.json (default: web/data)")
+    s.add_argument("--site", help="with --bundle: the site to export")
+    s.add_argument("--bundle", metavar="FILE", help="write one site as a single file the viewer can open "
+                   "from disk or a URL, e.g. my-dig.strata.json")
     s.set_defaults(func=cmd_export_web)
 
     s = sub.add_parser("mcp", help="serve the store over MCP (stdio)")

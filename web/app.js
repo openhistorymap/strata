@@ -39,7 +39,9 @@ const KIND_TEXT = {
   period_inversion: "An earlier period lying above a later one.",
   enclosed: "Above, below and within the same unit: an inclusion, not an order.",
 };
-const PERIOD_COLORS = {
+// Kenan Tepe's periods keep fixed colours; any other dataset's periods are
+// coloured in date order from the same earthy palette.
+const KNOWN_PERIODS = {
   "Ubaid": "#8c5a3c",
   "Late Chalcolithic": "#b5763f",
   "Late Chalcolithic V": "#cf9d4f",
@@ -48,7 +50,37 @@ const PERIOD_COLORS = {
   "Middle Bronze Age": "#5d7d9a",
   "Early Iron Age": "#7d6a9e",
 };
-const periodColor = (name) => PERIOD_COLORS[name] || "#b7ad9f";
+const PALETTE = ["#8c5a3c", "#b5763f", "#cf9d4f", "#8a9a5b", "#5f8a6e", "#4f8a8b", "#5d7d9a", "#7d6a9e", "#9c5f7d", "#a0524a"];
+let periodColors = { ...KNOWN_PERIODS };
+const periodColor = (name) => periodColors[name] || "#b7ad9f";
+function assignPeriodColors(periods) {
+  periodColors = { ...KNOWN_PERIODS };
+  let i = 0;
+  for (const p of periods) if (!periodColors[p.name]) periodColors[p.name] = PALETTE[i++ % PALETTE.length];
+}
+
+/** Only http(s) links from a dataset become hrefs: a file can carry anything. */
+const safeUrl = (u) => (typeof u === "string" && /^https?:\/\//i.test(u) ? u : null);
+const bytes = (n) => (n >= 1e6 ? `${(n / 1e6).toFixed(1)} MB` : `${Math.max(1, Math.round(n / 1e3))} kB`);
+
+// -------------------------------------------------------------------- theme --
+
+const THEMES = ["auto", "light", "dark"];
+const themeBtn = $("#theme");
+const darkQuery = matchMedia("(prefers-color-scheme: dark)");
+function applyTheme() {
+  const mode = localStorage.getItem("strata-theme") || "auto";
+  document.documentElement.dataset.theme = mode === "auto" ? (darkQuery.matches ? "dark" : "light") : mode;
+  themeBtn.textContent = { auto: "◐ Auto", light: "☀ Light", dark: "☾ Dark" }[mode];
+  themeBtn.title = `Theme: ${mode}${mode === "auto" ? " (follows your system)" : ""}. Click to change.`;
+}
+themeBtn.addEventListener("click", () => {
+  const mode = localStorage.getItem("strata-theme") || "auto";
+  localStorage.setItem("strata-theme", THEMES[(THEMES.indexOf(mode) + 1) % THEMES.length]);
+  applyTheme();
+});
+darkQuery.addEventListener("change", applyTheme);
+applyTheme();
 
 // -------------------------------------------------------------------- state --
 
@@ -59,29 +91,35 @@ const state = {
   edges: [],
   findsReady: false,
   trenches: [],
+  source: null,         // what is loaded: {kind: "builtin"|"url"|"local", ...}
 };
 
 const engine = $("#engine");
 const engineText = $("#engine-text");
 const engineBar = $("#engine-bar");
-const loadStats = {};
+let loadStats = {};
+let db = null;
+let catalogue = [];     // web/data/datasets.json
 
-const db = new GraphClient((msg) => {
-  if (msg.type === "progress") {
+function onEngine(msg) {
+  if (msg.type === "dataset") {
+    if (msg.dataset) { state.source.dataset = msg.dataset; renderSource(); }
+  } else if (msg.type === "progress") {
     engineBar.style.width = `${Math.round((100 * msg.done) / msg.total)}%`;
-    engineText.textContent = msg.part === "core"
+    engineText.textContent = msg.index === 0
       ? `Loading the matrix into Relate… ${fmt(msg.done)} / ${fmt(msg.total)}`
       : `Matrix ready · loading finds ${Math.round((100 * msg.done) / msg.total)}%`;
   } else if (msg.type === "ready") {
-    loadStats[msg.part] = msg;
-    if (msg.part === "core") {
+    loadStats[msg.index] = msg;
+    if (msg.index === 0) {
       engine.classList.add("ready");
       engineBar.style.width = "0";
       start();
-    } else {
+    }
+    if (msg.last) {
       state.findsReady = true;
       engine.classList.add("done");
-      if (state.unit) showUnit(state.unit, { keepView: true });
+      if (msg.index > 0 && state.unit) showUnit(state.unit, { keepView: true });
     }
     const nodes = Object.values(loadStats).reduce((n, p) => n + p.nodes, 0);
     const rels = Object.values(loadStats).reduce((n, p) => n + p.relationships, 0);
@@ -91,26 +129,179 @@ const db = new GraphClient((msg) => {
     engine.title = `Loaded in ${secs.toFixed(1)} s`;
   } else if (msg.type === "failed") {
     engine.classList.add("failed");
-    engineText.textContent = `Could not start Relate: ${msg.error}`;
+    engineText.textContent = `Could not load: ${msg.error}`;
+    $("#matrix-empty").hidden = false;
     $("#matrix-empty").textContent = msg.error;
   }
+}
+
+// ---------------------------------------------------------------- datasets --
+
+/** Open a dataset: drop the current graph and load a fresh one in a new worker. */
+function openSource(source) {
+  if (db) db.close();
+  state.source = source;
+  Object.assign(state, { trench: null, unit: null, units: new Map(), edges: [], findsReady: false, trenches: [], reach: null, involved: [] });
+  loadStats = {};
+  engine.classList.remove("ready", "done", "failed");
+  engineBar.style.width = "0";
+  engineText.textContent = "Starting Relate (WebAssembly)…";
+  svg.replaceChildren();
+  $("#matrix-empty").hidden = false;
+  $("#matrix-empty").textContent = "Loading the graph…";
+  $("#matrix-title").textContent = "Harris matrix";
+  $("#matrix-meta").textContent = "";
+  $("#trench-list").replaceChildren();
+  $("#issue-kinds").replaceChildren();
+  $("#issue-count").textContent = "";
+  $("#legend").replaceChildren();
+  showPlaceholder();
+  renderSource();
+  db = new GraphClient(onEngine);
+  db.load(source.load);
+}
+
+function builtinSource(d) {
+  const base = new URL("./data/", location.href);
+  return { kind: "builtin", id: d.id, dataset: d, load: { urls: d.parts.map((p) => new URL(p.path, base).href) } };
+}
+
+function setQuery(params) {
+  const url = new URL(location.href);
+  url.search = new URLSearchParams(params).toString();
+  history.replaceState(null, "", url);
+}
+
+function openBuiltin(id) {
+  const d = catalogue.find((x) => x.id === id) || catalogue[0];
+  if (!d) return;
+  setQuery(d === catalogue[0] ? {} : { dataset: d.id });
+  openSource(builtinSource(d));
+}
+
+function openUrl(raw) {
+  let url;
+  try { url = new URL(raw, location.href); } catch { return showDialogError(`Not a URL: ${raw}`); }
+  if (!/^https?:$/.test(url.protocol)) return showDialogError("Only http(s) URLs can be opened.");
+  setQuery({ data: url.href });
+  openSource({ kind: "url", url: url.href, load: { url: url.href } });
+}
+
+function openFile(file) {
+  if (!file) return;
+  setQuery({});
+  location.hash = "";
+  openSource({ kind: "local", name: file.name, size: file.size, modified: file.lastModified, load: { file, name: file.name } });
+}
+
+function renderSource() {
+  const src = state.source;
+  const d = src.dataset || {};
+  const chip = $("#source");
+  chip.classList.toggle("local", src.kind === "local");
+  let tag, title, detail;
+  if (src.kind === "local") {
+    tag = "Local file";
+    title = src.name;
+    detail = `${bytes(src.size)}${src.modified ? ` · modified ${new Date(src.modified).toISOString().slice(0, 10)}` : ""}`
+      + " · read in this tab, nothing is uploaded";
+  } else if (src.kind === "url") {
+    tag = "URL";
+    title = d.name || new URL(src.url).pathname.split("/").pop();
+    detail = src.url;
+  } else {
+    tag = "Dataset";
+    title = d.name || src.id;
+    const size = (d.parts || []).reduce((n, p) => n + (p.bytes || 0), 0);
+    detail = `exported from ${d.store || "data/strata.rl"}${d.built ? ` on ${d.built.slice(0, 10)}` : ""}${size ? ` · ${bytes(size)}` : ""}`;
+  }
+  chip.replaceChildren(h("span", { class: "tag" }, tag), h("span", { class: "title" }, title), h("span", { class: "caret", "aria-hidden": "true" }, "▾"));
+  chip.title = `${tag}: ${title}\n${detail}\nClick to open another dataset`;
+  const credit = [d.source, d.license].filter(Boolean).join(" · ");
+  $("#site-line").textContent = [detail, credit].filter(Boolean).join(" — ");
+}
+
+// The "Open a dataset" dialog: built-in datasets, a URL, or a local file.
+const dialog = $("#open-dialog");
+function showDialogError(text) {
+  $("#open-error").textContent = text;
+  $("#open-error").hidden = !text;
+}
+function renderCatalogue() {
+  $("#builtin-list").replaceChildren(...catalogue.map((d) => {
+    const n = d.parts.reduce((a, p) => a + p.nodes, 0), r = d.parts.reduce((a, p) => a + p.relationships, 0);
+    const size = d.parts.reduce((a, p) => a + p.bytes, 0);
+    const current = state.source?.kind === "builtin" && state.source.id === d.id;
+    return h("li", {}, h("button", { type: "button", class: "dataset", "aria-current": current ? "true" : "false",
+      onclick: () => { dialog.close(); openBuiltin(d.id); } },
+      h("b", {}, d.name), h("span", {}, d.source || ""),
+      h("small", {}, `${fmt(n)} nodes · ${fmt(r)} relationships · ${bytes(size)} · ${d.license || "licence not stated"}`),
+      h("code", {}, `${d.store || "strata.rl"} → web/data/${d.id}/`)));
+  }));
+}
+$("#source").addEventListener("click", () => { showDialogError(""); renderCatalogue(); dialog.showModal(); });
+$("#open-close").addEventListener("click", () => dialog.close());
+$("#open-url-form").addEventListener("submit", (e) => {
+  e.preventDefault();
+  const v = $("#open-url").value.trim();
+  if (!v) return;
+  dialog.close();
+  openUrl(v);
 });
+$("#open-file").addEventListener("change", (e) => { dialog.close(); openFile(e.target.files[0]); e.target.value = ""; });
+const drop = $("#drop");
+for (const ev of ["dragenter", "dragover"]) document.addEventListener(ev, (e) => {
+  if (![...(e.dataTransfer?.types || [])].includes("Files")) return;
+  e.preventDefault();
+  document.body.classList.add("dropping");
+});
+for (const ev of ["dragleave", "drop"]) document.addEventListener(ev, (e) => {
+  if (ev === "dragleave" && e.relatedTarget) return;
+  document.body.classList.remove("dropping");
+});
+document.addEventListener("drop", (e) => {
+  const file = e.dataTransfer?.files?.[0];
+  if (!file) return;
+  e.preventDefault();
+  if (dialog.open) dialog.close();
+  openFile(file);
+});
+drop.addEventListener("click", () => $("#open-file").click());
+drop.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); $("#open-file").click(); } });
 
 // ----------------------------------------------------------------- startup --
 
+async function boot() {
+  try {
+    const res = await fetch(new URL("./data/datasets.json", location.href));
+    if (res.ok) catalogue = (await res.json()).datasets || [];
+  } catch { /* no catalogue: URL and local files still work */ }
+  const params = new URLSearchParams(location.search);
+  if (params.get("data")) openUrl(params.get("data"));
+  else if (catalogue.length) openBuiltin(params.get("dataset"));
+  else { showDialogError("No built-in datasets here. Open a URL or a local file."); dialog.showModal(); }
+}
+
+let examplesFilled = false;
 async function start() {
+  const client = db;
   const [site] = await db.rows(Q.site);
-  if (site) {
-    $("#site-line").textContent = `${site.name} · ${fmt(site.units)} units in ${site.trenches} trenches · ${site.source} ${site.license}`;
+  if (client !== db) return;
+  if (site && !state.source.dataset) {
+    state.source.dataset = { name: site.name, source: site.source, license: site.license };
+    renderSource();
   }
+  $("#site-name").textContent = site
+    ? `${site.name} · ${fmt(site.units)} units${site.trenches ? ` in ${site.trenches} trenches` : ""}` : "";
   const periods = await db.rows(Q.periods);
+  assignPeriodColors(periods);
   renderLegend(periods);
   state.trenches = await db.rows(Q.trenches);
   renderTrenches();
   renderIssueKinds(await db.rows(Q.issueKinds));
-  fillExamples();
-  const target = parseHash() || { path: "Area F/Trench 1/Locus 1032" };
-  await goTo(target);
+  if (!examplesFilled) { fillExamples(); examplesFilled = true; }
+  const fallback = site && site.id === "kenan-tepe" ? { path: "Area F/Trench 1/Locus 1032" } : {};
+  await goTo(parseHash() || fallback);
 }
 
 function parseHash() {
@@ -121,11 +312,11 @@ function parseHash() {
 
 async function goTo({ path, trenchName, uid }) {
   if (path) {
-    const [row] = await db.rows("MATCH (c:Context {path: $path})-[:IN_TRENCH]->(t:Trench) RETURN c.uid AS uid, t.uid AS trench", { path });
+    const [row] = await db.rows(Q.byPath, { path });
     if (row) { await showTrench(row.trench); await showUnit(row.uid); return; }
   }
   if (uid) {
-    const [row] = await db.rows("MATCH (c:Context {uid: $uid})-[:IN_TRENCH]->(t:Trench) RETURN t.uid AS trench", { uid });
+    const [row] = await db.rows(Q.byUid, { uid });
     if (row) { await showTrench(row.trench); await showUnit(uid); return; }
   }
   const t = state.trenches.find((t) => t.name === trenchName) || state.trenches[0];
@@ -280,6 +471,10 @@ async function showTrench(uid) {
   drawMatrix();
   frame(null);
   history.replaceState(null, "", `#${encodeURIComponent(t ? t.name : uid)}`);
+  showPlaceholder();
+}
+
+function showPlaceholder() {
   $("#detail").replaceChildren(h("div", { class: "placeholder" },
     h("h3", {}, "Pick a unit"),
     h("p", {}, "Click a box in the matrix. Everything shown here comes from Cypher queries against the graph running in this page.")));
@@ -339,9 +534,9 @@ function drawMatrix() {
       "aria-label": `${u.label}${period ? ", " + period : ""}${u.flagged ? ", has open issues" : ""}`,
     });
     g.append(
-      s("rect", { class: "box", width: L.nodeW, height: L.nodeH, rx: 3, fill: "#fbf8f2" }),
+      s("rect", { class: "box", width: L.nodeW, height: L.nodeH, rx: 3 }),
       s("rect", { class: "band", width: 6, height: L.nodeH - 2, x: 1, y: 1, rx: 2, fill: periodColor(period) }),
-      s("rect", { class: "band", width: L.nodeW - 8, height: L.nodeH - 2, x: 7, y: 1, fill: periodColor(period), "fill-opacity": 0.16 }),
+      s("rect", { class: "band tint", width: L.nodeW - 8, height: L.nodeH - 2, x: 7, y: 1, fill: periodColor(period) }),
       s("text", { x: L.nodeW / 2 + 3, y: L.nodeH / 2 + 4, "text-anchor": "middle" }, u.label.replace(/^Locus /, "")),
       s("title", {}, `${u.label} · ${u.type || "unit"} · ${u.periods.join(" / ") || "undated"}`),
     );
@@ -416,9 +611,9 @@ async function showUnit(uid, { keepView = false, involved = null } = {}) {
   history.replaceState(null, "", `#${encodeURIComponent(u.path)}`);
   const totalMs = [unitRes, nb, iss, tpq, taq, seals, sealedBy, finds].filter(Boolean).reduce((n, r) => n + r.ms, 0);
 
-  const [area, trench] = u.path.split("/");
+  const group = state.trenches.find((t) => t.uid === u.trench);
   const head = h("div", {},
-    h("div", { class: "crumbs" }, `${area} · ${trench}`),
+    h("div", { class: "crumbs" }, u.path.includes("/") ? u.path.split("/").slice(0, -1).join(" · ") : (group ? group.name : "")),
     h("h3", {}, u.label),
     h("div", { class: "facts" }, [
       u.type || "unit",
@@ -427,7 +622,8 @@ async function showUnit(uid, { keepView = false, involved = null } = {}) {
     ].filter(Boolean).join(" · ")),
     h("div", { class: "chips" }, u.periods.length
       ? u.periods.map((pp) => h("span", { class: "chip" }, h("i", { style: { background: periodColor(pp.name) } }), pp.name,
-          h("small", {}, `${year(pp.start_year)}–${year(pp.end_year)}${pp.basis ? " · " + pp.basis : ""}`)))
+          h("small", {}, [pp.start_year !== null && pp.start_year !== undefined ? `${year(pp.start_year)}–${year(pp.end_year)}` : null, pp.basis]
+            .filter(Boolean).join(" · "))))
       : h("span", { class: "chip" }, h("i", { style: { background: periodColor(null) } }), u.period_label || "undated")),
   );
 
@@ -494,8 +690,9 @@ async function showUnit(uid, { keepView = false, involved = null } = {}) {
 
   const note = u.description ? section("Excavator's note", null, null, h("blockquote", { class: "note" }, u.description)) : null;
   const src = section("Record", null, null, h("div", { class: "src" },
-    u.uri ? h("a", { href: u.uri, target: "_blank", rel: "noopener" }, "Open Context record ↗") : null,
-    u.citation ? h("a", { href: u.citation, target: "_blank", rel: "noopener" }, u.citation.replace("https://", "")) : null,
+    safeUrl(u.uri) ? h("a", { href: safeUrl(u.uri), target: "_blank", rel: "noopener" },
+      /opencontext\.org/.test(u.uri) ? "Open Context record ↗" : "Source record ↗") : null,
+    safeUrl(u.citation) ? h("a", { href: safeUrl(u.citation), target: "_blank", rel: "noopener" }, u.citation.replace("https://", "")) : null,
     h("span", { class: "muted" }, `${u.path} · answered by ${8 - (finds ? 0 : 1)} Cypher queries in ${Math.round(totalMs)} ms`)));
 
   $("#detail").replaceChildren(h("div", { class: "unit" }, head, issuesSec, note, bracket, rels, findsSec, src));
@@ -577,4 +774,6 @@ editor.addEventListener("keydown", (e) => {
 });
 
 window.addEventListener("resize", () => frame(state.unit));
-window.addEventListener("hashchange", () => { const t = parseHash(); if (t) goTo(t); });
+window.addEventListener("hashchange", () => { const t = parseHash(); if (t && db) goTo(t); });
+
+boot();

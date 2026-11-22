@@ -6,6 +6,14 @@
 <title>Strata · Kenan Tepe as one graph</title>
 <meta name="description" content="An archaeological excavation as one Relate graph, queried in your browser: Harris matrix, finds, periods and the contradictions in the record.">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect y='1' width='16' height='4' fill='%23b5763f'/%3E%3Crect y='6' width='16' height='4' fill='%238a9a5b'/%3E%3Crect y='11' width='16' height='4' fill='%235d7d9a'/%3E%3C/svg%3E">
+<script>
+  // Set the theme before first paint (app.js keeps it in sync afterwards).
+  try {
+    const m = localStorage.getItem("strata-theme") || "auto";
+    document.documentElement.dataset.theme = m === "auto" ? (matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light") : m;
+  } catch (e) {}
+</script>
+<meta name="color-scheme" content="light dark">
 <link rel="stylesheet" href="style.css">
 <link rel="modulepreload" href="vendor/relate-wasm/relate.js">
 </head>
@@ -13,17 +21,21 @@
 <header class="top">
   <div class="brand">
     <span class="mark" aria-hidden="true"><i></i><i></i><i></i></span>
-    <div>
+    <div class="brand-text">
       <h1>Strata</h1>
-      <p class="sub" id="site-line">An excavation as one graph</p>
+      <p class="sub"><span id="site-name">An excavation as one graph</span> <span id="site-line"></span></p>
     </div>
   </div>
+  <button type="button" id="source" class="source" aria-haspopup="dialog" title="Open another dataset">
+    <span class="tag">Dataset</span><span class="title">…</span><span class="caret" aria-hidden="true">▾</span>
+  </button>
   <div class="engine" id="engine" role="status" aria-live="polite">
     <span class="dot"></span><span id="engine-text">Starting Relate (WebAssembly)…</span>
     <span class="bar"><span id="engine-bar"></span></span>
   </div>
   <nav class="links">
     <button type="button" id="console-toggle" class="ghost" title="Cypher console (Ctrl+`)">Cypher console</button>
+    <button type="button" id="theme" class="ghost">◐ Auto</button>
     <a href="https://github.com/openhistorymap/strata" class="ghost">GitHub</a>
   </nav>
 </header>
@@ -90,6 +102,37 @@ ORDER BY n DESC</textarea>
     <div class="results" id="results"></div>
   </div>
 </section>
+
+<dialog id="open-dialog" aria-labelledby="open-title">
+  <div class="dialog-head">
+    <h2 id="open-title">Open a dataset</h2>
+    <button type="button" class="ghost small" id="open-close" aria-label="Close">✕</button>
+  </div>
+  <p class="hint">Whatever you open is loaded into Relate in this tab and replaces the current graph.</p>
+  <p class="dialog-error" id="open-error" hidden></p>
+
+  <h3>On this site</h3>
+  <ul class="datasets" id="builtin-list"></ul>
+
+  <h3>From a URL</h3>
+  <form id="open-url-form" class="url-form">
+    <input id="open-url" type="url" placeholder="https://example.org/my-dig.strata.json" aria-label="Dataset URL" required>
+    <button type="submit" class="primary small">Open</button>
+  </form>
+  <p class="hint">The server must allow cross-origin requests (CORS); GitHub raw files and Zenodo do. The link to this page keeps the URL, so you can share it.</p>
+
+  <h3>From your computer</h3>
+  <div class="drop" id="drop" role="button" tabindex="0" aria-label="Choose a local Strata file">
+    <b>Drop a <code>.strata.json</code> file here</b> or click to choose one.
+    <span>It is read in this tab. Nothing is uploaded.</span>
+  </div>
+  <input type="file" id="open-file" accept=".json,application/json" hidden>
+  <p class="hint">Make one from any excavation Strata can import:<br>
+    <code>uv run strata --db my-dig.rl import-matrix my.hmcx --site my-dig</code><br>
+    <code>uv run strata --db my-dig.rl export-web --site my-dig --bundle my-dig.strata.json</code></p>
+</dialog>
+
+<div class="drop-overlay" aria-hidden="true"><div>Drop to open this file in Relate, in this tab</div></div>
 
 <script type="module" src="app.js"></script>
 </body>

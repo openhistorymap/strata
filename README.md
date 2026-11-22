@@ -124,18 +124,35 @@ relate serve --database data/strata.rl --mcp stdio      # Relate's own MCP surfa
 - Click a unit for its record, open issues, date bracket, relations and finds. The matrix outlines everything it seals and everything sealing it.
 - Every panel has a **Cypher** link that opens the query behind it in the console, where you can edit and rerun it.
 - Try `#Area F/Trench 1/Locus 1032` (the "ancient trash" inversion) or `#Area A/Trench 9/Locus 2`, where the excavator's note explains the contradiction.
+- Light, dark, or follow your system (the ◐ button).
+
+**Other datasets.** The chip next to the title always says what is loaded and where it came from. Click it to open another dataset:
+
+- **On this site:** every site in `data/strata.rl`, listed in `web/data/datasets.json`. Link one with `?dataset=<site>`.
+- **From a URL:** any Strata export served with CORS (GitHub raw, Zenodo, your own server). The page link becomes `?data=<url>`, so you can share it.
+- **From your computer:** drop a `.strata.json` file on the page, or pick one. It is read in the tab and nothing is uploaded. The chip turns orange and says **Local file** with the file's name, size and date for as long as it is loaded.
+
+Make that file from any excavation Strata can import:
+
+```bash
+uv run strata --db my-dig.rl import-matrix my.hmcx --site my-dig --name "My dig"
+uv run strata --db my-dig.rl export-web --site my-dig --bundle my-dig.strata.json
+```
+
+Units recorded without a trench (most Harris-matrix files) are drawn as one matrix, "Units without a trench".
 
 To run it locally:
 
 ```bash
-uv run strata export-web            # data/strata.rl -> web/data/*.json (strata build also does this)
+uv run strata export-web            # data/strata.rl -> web/data/<site>/{core,finds}.json (strata build also does this)
 python3 -m http.server -d web 8000  # then open http://localhost:8000
 ```
 
-The WASM build cannot open a `.rl` file; it runs in memory. So `strata export-web` writes every node and relationship, with all its properties, as JSON. The page loads that into Relate in two parts. The matrix comes first (about 5 s), and the finds stream in behind it while you work. [`tests/web_smoke.mjs`](tests/web_smoke.mjs) loads both parts into the same WASM build under Node and runs every query the page uses:
+The WASM build cannot open a `.rl` file; it runs in memory. So `strata export-web` writes every node and relationship, with all its properties, as JSON. The page loads that into Relate in two parts. The matrix comes first (about 5 s), and the finds stream in behind it while you work. [`tests/web_smoke.mjs`](tests/web_smoke.mjs) loads a dataset into the same WASM build under Node and runs every query the page uses:
 
 ```bash
-docker run --rm -v "$PWD":/app -w /app node:22-slim node tests/web_smoke.mjs
+docker run --rm -v "$PWD":/app -w /app node:22-slim node tests/web_smoke.mjs                       # the first built-in dataset
+docker run --rm -v "$PWD":/app -w /app node:22-slim node tests/web_smoke.mjs my-dig.strata.json    # a bundle
 ```
 
 ### Give it to an agent
@@ -176,7 +193,7 @@ uv run pytest
   - `finds.csv`
   - `site.json`
 - `data/raw/` holds the cached Open Context JSON. It isn't committed; `strata fetch` recreates it.
-- `web/data/core.json` and `web/data/finds.json` are the same graph exported for the browser viewer. `strata build` regenerates them, and the viewer loads them into Relate's in-memory WASM build.
+- `web/data/<site>/core.json` and `finds.json` are the same graph exported for the browser viewer, and `web/data/datasets.json` lists them. `strata build` regenerates them, and the viewer loads them into Relate's in-memory WASM build.
 
 ## Data and licences
 

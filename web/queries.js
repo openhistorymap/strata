@@ -1,19 +1,24 @@
 // Every view in the viewer is one of these Cypher queries, run by Relate in
 // the browser. The page shows each query next to its result ("Cypher" links).
+//
+// A matrix is drawn per group: a trench, or, for units recorded without a
+// trench (most Harris-matrix files), the site itself. Units point at their
+// group with IN_TRENCH or IN_SITE; a group's id is its uid (trench) or id (site).
 
 export const Q = {
   site: `
 MATCH (s:Site)
-OPTIONAL MATCH (s)<-[:IN_SITE]-(t:Trench)<-[:IN_TRENCH]-(c:Context)
 RETURN s.id AS id, s.name AS name, s.source AS source, s.source_uri AS source_uri,
        s.license_label AS license, s.wikidata AS wikidata, s.location AS location,
-       count(DISTINCT t) AS trenches, count(c) AS units`,
+       COUNT { (s)<-[:IN_SITE]-(:Trench) } AS trenches,
+       COUNT { MATCH (c:Context) WHERE c.site = s.id } AS units`,
 
   trenches: `
-MATCH (t:Trench)<-[:IN_TRENCH]-(c:Context)
+MATCH (c:Context)-[:IN_TRENCH|IN_SITE]->(g)
 OPTIONAL MATCH (c)<-[:INVOLVES]-(i:Issue)
-RETURN t.uid AS uid, t.name AS name, count(DISTINCT c) AS units,
-       count(DISTINCT i) AS issues, max(c.depth) AS rows
+RETURN coalesce(g.uid, g.id) AS uid,
+       CASE WHEN g.uid IS NULL THEN 'Units without a trench' ELSE g.name END AS name,
+       count(DISTINCT c) AS units, count(DISTINCT i) AS issues, max(c.depth) AS rows
 ORDER BY name`,
 
   issueKinds: `
@@ -22,10 +27,10 @@ RETURN i.kind AS kind, i.severity AS severity, count(*) AS n
 ORDER BY CASE i.severity WHEN 'error' THEN 0 WHEN 'warning' THEN 1 ELSE 2 END, n DESC`,
 
   issuesOfKind: `
-MATCH (i:Issue {kind: $kind, status: 'open'})-[v:INVOLVES]->(c:Context)-[:IN_TRENCH]->(t:Trench)
-WITH i, t, c ORDER BY v.position
+MATCH (i:Issue {kind: $kind, status: 'open'})-[v:INVOLVES]->(c:Context)-[:IN_TRENCH|IN_SITE]->(g)
+WITH i, g, c ORDER BY v.position
 RETURN i.id AS id, i.detail AS detail, i.severity AS severity,
-       t.uid AS trench, collect(c.uid) AS units
+       coalesce(g.uid, g.id) AS trench, collect(c.uid) AS units
 ORDER BY trench, id`,
 
   periods: `
@@ -34,25 +39,26 @@ RETURN p.name AS name, p.start_year AS start_year, p.end_year AS end_year, count
 ORDER BY start_year`,
 
   matrixUnits: `
-MATCH (:Trench {uid: $trench})<-[:IN_TRENCH]-(c:Context)
+MATCH (c:Context)-[:IN_TRENCH|IN_SITE]->(g) WHERE coalesce(g.uid, g.id) = $trench
 OPTIONAL MATCH (c)-[:DATED_TO]->(p:Period)
 RETURN c.uid AS uid, c.label AS label, c.type AS type, c.depth AS depth,
        collect(p.name) AS periods,
        EXISTS { MATCH (c)<-[:INVOLVES]-(:Issue {status: 'open'}) } AS flagged`,
 
   matrixEdges: `
-MATCH (:Trench {uid: $trench})<-[:IN_TRENCH]-(a:Context)-[r:ABOVE|CONTESTED|REJECTED|SAME_AS]->(b:Context)
+MATCH (a:Context)-[:IN_TRENCH|IN_SITE]->(g) WHERE coalesce(g.uid, g.id) = $trench
+MATCH (a)-[r:ABOVE|CONTESTED|REJECTED|SAME_AS]->(b:Context)
 RETURN a.uid AS a, b.uid AS b, type(r) AS type, coalesce(r.redundant, false) AS redundant`,
 
   unit: `
-MATCH (c:Context {uid: $uid})-[:IN_TRENCH]->(t:Trench)
+MATCH (c:Context {uid: $uid})-[:IN_TRENCH|IN_SITE]->(g)
 OPTIONAL MATCH (c)-[d:DATED_TO]->(p:Period)
-RETURN c.uid AS uid, c.path AS path, c.label AS label, c.type AS type, c.depth AS depth,
+RETURN c.uid AS uid, coalesce(c.path, c.label) AS path, c.label AS label, c.type AS type, c.depth AS depth,
        c.description AS description, c.uri AS uri, c.citation AS citation,
        c.period_label AS period_label, c.start_year AS start_year, c.end_year AS end_year,
        c.excavated_from AS excavated_from, c.excavated_to AS excavated_to,
        c.top_depth AS top, c.bottom_depth AS bottom, c.recorded_by AS recorded_by,
-       t.uid AS trench, collect(p {.name, .start_year, .end_year, basis: d.basis}) AS periods`,
+       coalesce(g.uid, g.id) AS trench, collect(p {.name, .start_year, .end_year, basis: d.basis}) AS periods`,
 
   neighbours: `
 MATCH (c:Context {uid: $uid})-[r:ABOVE|CONTESTED|REJECTED|SAME_AS|WITHIN|ABUTS]-(o:Context)
@@ -90,6 +96,14 @@ RETURN f.category AS category, count(f) AS n,
 ORDER BY n DESC`,
 
   findsLoaded: `MATCH (f:Find) RETURN count(f) AS n`,
+
+  byPath: `
+MATCH (c:Context)-[:IN_TRENCH|IN_SITE]->(g) WHERE c.path = $path OR (c.path IS NULL AND c.label = $path)
+RETURN c.uid AS uid, coalesce(g.uid, g.id) AS trench LIMIT 1`,
+
+  byUid: `
+MATCH (c:Context {uid: $uid})-[:IN_TRENCH|IN_SITE]->(g)
+RETURN coalesce(g.uid, g.id) AS trench`,
 };
 
 export const EXAMPLES = [

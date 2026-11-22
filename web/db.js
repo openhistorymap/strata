@@ -1,4 +1,4 @@
-// Page-side handle on the Relate worker: query(cypher, params) -> Promise.
+// Page-side handle on the Relate worker: load(source), then query(cypher, params).
 
 export class GraphClient {
   constructor(onEvent) {
@@ -18,6 +18,11 @@ export class GraphClient {
     this.worker.onerror = (e) => onEvent({ type: "failed", error: e.message || "worker failed to start" });
   }
 
+  /** {urls: [...]} | {url} | {file, name}: see worker.js. */
+  load(source) {
+    this.worker.postMessage({ type: "load", source });
+  }
+
   /** Raw envelope: {columns, rows, error, ms}. */
   run(cypher, params) {
     const id = this.next++;
@@ -32,5 +37,11 @@ export class GraphClient {
     const res = await this.run(cypher, params);
     if (res.error) throw new Error(res.error);
     return res.rows;
+  }
+
+  /** Stop the worker. Queries still in flight never settle; their callers are stale anyway. */
+  close() {
+    this.worker.terminate();
+    this.pending.clear();
   }
 }
