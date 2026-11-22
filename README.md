@@ -56,7 +56,7 @@ The period inversions are where connected context pays off. Locus 1032 in Area F
 
 ## How it uses Relate
 
-- **Mode: single file** (`data/strata.rl`, about 44 MB). The [browser viewer](https://openhistorymap.github.io/strata/) also runs the same graph in Relate's in-memory WASM build.
+- **Mode: single file** (`data/strata.rl`, about 44 MB). The [browser viewer](https://www.openhistorymap.org/strata/) also runs the same graph in Relate's in-memory WASM build.
 - **Why this mode:**
   - An excavation archive is a document. It gets deposited, cited, copied to a field laptop that has no network, and handed to the next specialist.
   - One `.rl` file is all of that at once. Relate opens it in-process, with no server, so the same file works with the Python package, the `relate` CLI, `relate serve --mcp`, and Strata's own MCP server.
@@ -118,7 +118,7 @@ relate serve --database data/strata.rl --mcp stdio      # Relate's own MCP surfa
 
 ### In the browser
 
-**[openhistorymap.github.io/strata](https://openhistorymap.github.io/strata/)** runs the same graph in your browser tab: Relate's WebAssembly build, in a Web Worker, holding all 23,432 nodes and 40,796 relationships.
+**[openhistorymap.org/strata](https://www.openhistorymap.org/strata/)** runs the same graph in your browser tab: Relate's WebAssembly build, in a Web Worker, holding all 23,432 nodes and 40,796 relationships.
 
 - Pick a trench to see its Harris matrix.
 - Click a unit for its record, open issues, date bracket, relations and finds. The matrix outlines everything it seals and everything sealing it.
