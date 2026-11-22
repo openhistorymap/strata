@@ -116,7 +116,7 @@ def cmd_ask(args) -> None:
 
 
 def cmd_query(args) -> None:
-    with Store(args.db) as store:
+    with Store(args.db, read_only=True) as store:
         try:
             out = store.read(args.cypher, json.loads(args.params) if args.params else None, limit=args.limit)
         except PermissionError as e:
