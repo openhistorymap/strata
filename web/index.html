@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Strata · Kenan Tepe as one graph</title>
+<meta name="description" content="An archaeological excavation as one Relate graph, queried in your browser: Harris matrix, finds, periods and the contradictions in the record.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect y='1' width='16' height='4' fill='%23b5763f'/%3E%3Crect y='6' width='16' height='4' fill='%238a9a5b'/%3E%3Crect y='11' width='16' height='4' fill='%235d7d9a'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="style.css">
+<link rel="modulepreload" href="vendor/relate-wasm/relate.js">
+</head>
+<body>
+<header class="top">
+  <div class="brand">
+    <span class="mark" aria-hidden="true"><i></i><i></i><i></i></span>
+    <div>
+      <h1>Strata</h1>
+      <p class="sub" id="site-line">An excavation as one graph</p>
+    </div>
+  </div>
+  <div class="engine" id="engine" role="status" aria-live="polite">
+    <span class="dot"></span><span id="engine-text">Starting Relate (WebAssembly)…</span>
+    <span class="bar"><span id="engine-bar"></span></span>
+  </div>
+  <nav class="links">
+    <button type="button" id="console-toggle" class="ghost" title="Cypher console (Ctrl+`)">Cypher console</button>
+    <a href="https://github.com/openhistorymap/strata" class="ghost">GitHub</a>
+  </nav>
+</header>
+
+<main class="layout">
+  <aside class="left" aria-label="Trenches and issues">
+    <div class="tabs" role="tablist">
+      <button role="tab" aria-selected="true" data-tab="trenches">Trenches</button>
+      <button role="tab" aria-selected="false" data-tab="issues">Issues <span class="count" id="issue-count"></span></button>
+    </div>
+    <div class="tabpanel" id="tab-trenches">
+      <input type="search" id="trench-filter" placeholder="Filter trenches" aria-label="Filter trenches">
+      <ul class="list" id="trench-list"></ul>
+    </div>
+    <div class="tabpanel" id="tab-issues" hidden>
+      <p class="hint">What the checks found in the published record. Each issue is a node in the graph, linked to the units it involves.</p>
+      <div id="issue-kinds"></div>
+    </div>
+  </aside>
+
+  <section class="center" aria-label="Harris matrix">
+    <div class="matrix-head">
+      <div>
+        <h2 id="matrix-title">Harris matrix</h2>
+        <p class="meta" id="matrix-meta"></p>
+      </div>
+      <div class="matrix-tools">
+        <label class="toggle"><input type="checkbox" id="show-implied"> implied relations</label>
+        <button type="button" class="ghost small" id="fit">Fit</button>
+        <button type="button" class="cypher-link" id="matrix-cypher">Cypher</button>
+      </div>
+    </div>
+    <div class="matrix-wrap" id="matrix-wrap">
+      <svg id="matrix" role="img" aria-label="Harris matrix of the selected trench"></svg>
+      <div class="empty" id="matrix-empty">Loading the graph…</div>
+    </div>
+    <div class="legend" id="legend"></div>
+  </section>
+
+  <aside class="right" aria-label="Selected unit" id="detail">
+    <div class="placeholder">
+      <h3>Pick a unit</h3>
+      <p>Click a box in the matrix. Everything shown here comes from Cypher queries against the graph running in this page.</p>
+    </div>
+  </aside>
+</main>
+
+<section class="console" id="console" hidden aria-label="Cypher console">
+  <div class="console-bar">
+    <strong>Cypher</strong>
+    <select id="examples" aria-label="Example queries"><option value="">Examples…</option></select>
+    <span class="spacer"></span>
+    <span class="meta" id="console-meta"></span>
+    <button type="button" id="run" class="primary small">Run <kbd>Ctrl+Enter</kbd></button>
+    <button type="button" class="ghost small" id="console-close" aria-label="Close console">✕</button>
+  </div>
+  <div class="console-body">
+    <div class="editor">
+      <textarea id="cypher" spellcheck="false" aria-label="Cypher query">MATCH (i:Issue)
+RETURN i.kind AS kind, count(*) AS n
+ORDER BY n DESC</textarea>
+      <input id="params" spellcheck="false" placeholder='parameters as JSON, e.g. {"uid": "…"}' aria-label="Query parameters (JSON)">
+    </div>
+    <div class="results" id="results"></div>
+  </div>
+</section>
+
+<script type="module" src="app.js"></script>
+</body>
+</html>

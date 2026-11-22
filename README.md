@@ -56,7 +56,7 @@ The period inversions are where connected context pays off. Locus 1032 in Area F
 
 ## How it uses Relate
 
-- **Mode: single file** (`data/strata.rl`, about 44 MB).
+- **Mode: single file** (`data/strata.rl`, about 44 MB). The [browser viewer](https://openhistorymap.github.io/strata/) also runs the same graph in Relate's in-memory WASM build.
 - **Why this mode:**
   - An excavation archive is a document. It gets deposited, cited, copied to a field laptop that has no network, and handed to the next specialist.
   - One `.rl` file is all of that at once. Relate opens it in-process, with no server, so the same file works with the Python package, the `relate` CLI, `relate serve --mcp`, and Strata's own MCP server.
@@ -116,6 +116,28 @@ relate --database data/strata.rl "MATCH (i:Issue) RETURN i.kind, count(*) ORDER 
 relate serve --database data/strata.rl --mcp stdio      # Relate's own MCP surface: raw Cypher
 ```
 
+### In the browser
+
+**[openhistorymap.github.io/strata](https://openhistorymap.github.io/strata/)** runs the same graph in your browser tab: Relate's WebAssembly build, in a Web Worker, holding all 23,432 nodes and 40,796 relationships.
+
+- Pick a trench to see its Harris matrix.
+- Click a unit for its record, open issues, date bracket, relations and finds. The matrix outlines everything it seals and everything sealing it.
+- Every panel has a **Cypher** link that opens the query behind it in the console, where you can edit and rerun it.
+- Try `#Area F/Trench 1/Locus 1032` (the "ancient trash" inversion) or `#Area A/Trench 9/Locus 2`, where the excavator's note explains the contradiction.
+
+To run it locally:
+
+```bash
+uv run strata export-web            # data/strata.rl -> web/data/*.json (strata build also does this)
+python3 -m http.server -d web 8000  # then open http://localhost:8000
+```
+
+The WASM build cannot open a `.rl` file; it runs in memory. So `strata export-web` writes every node and relationship, with all its properties, as JSON. The page loads that into Relate in two parts. The matrix comes first (about 5 s), and the finds stream in behind it while you work. [`tests/web_smoke.mjs`](tests/web_smoke.mjs) loads both parts into the same WASM build under Node and runs every query the page uses:
+
+```bash
+docker run --rm -v "$PWD":/app -w /app node:22-slim node tests/web_smoke.mjs
+```
+
 ### Give it to an agent
 
 Strata's MCP server adds domain tools on top of Cypher, such as `describe`, `relation`, `date_bracket`, `provenance`, `issues` and `explain_issue`. It also has checked edits:
@@ -154,6 +176,7 @@ uv run pytest
   - `finds.csv`
   - `site.json`
 - `data/raw/` holds the cached Open Context JSON. It isn't committed; `strata fetch` recreates it.
+- `web/data/core.json` and `web/data/finds.json` are the same graph exported for the browser viewer. `strata build` regenerates them, and the viewer loads them into Relate's in-memory WASM build.
 
 ## Data and licences
 

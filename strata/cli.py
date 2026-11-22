@@ -7,6 +7,7 @@
     strata ask relation "Area F/Trench 7/Locus 7042" "Area F/Trench 7/Locus 7044"
     strata query "MATCH (c:Context) RETURN c.type, count(*)"     read-only Cypher
     strata mcp                        serve the store to an agent over MCP (stdio)
+    strata export-web                 dump the store to web/data/ for the browser viewer
 """
 
 from __future__ import annotations
@@ -65,6 +66,11 @@ def cmd_build(args) -> None:
             print(f"{site}: {counts}\n  checks: {summary}  ({time.time() - t:.1f}s)", file=sys.stderr)
     tmp.replace(db)
     print(f"built {db} in {time.time() - t0:.1f}s", file=sys.stderr)
+    if db.resolve() == DEFAULT_DB:
+        from .web_export import export_web
+        with Store(db, read_only=True) as store:
+            out = export_web(store, DEFAULT_DB.parent.parent / "web" / "data")
+        print(f"refreshed the viewer data: {', '.join(v['file'] for v in out.values())}", file=sys.stderr)
 
 
 def cmd_import_matrix(args) -> None:
@@ -131,6 +137,12 @@ def cmd_stats(args) -> None:
         _print(store.stats())
 
 
+def cmd_export_web(args) -> None:
+    from .web_export import export_web
+    with Store(args.db, read_only=True) as store:
+        _print(export_web(store, Path(args.out)))
+
+
 def cmd_mcp(args) -> None:
     from .mcp_server import serve
     serve(args.db)
@@ -180,6 +192,10 @@ def main(argv: list[str] | None = None) -> None:
 
     s = sub.add_parser("stats", help="node and relationship counts")
     s.set_defaults(func=cmd_stats)
+
+    s = sub.add_parser("export-web", help="dump the store as JSON for the browser viewer (web/)")
+    s.add_argument("--out", default=str(Path(__file__).resolve().parent.parent / "web" / "data"))
+    s.set_defaults(func=cmd_export_web)
 
     s = sub.add_parser("mcp", help="serve the store over MCP (stdio)")
     s.set_defaults(func=cmd_mcp)
