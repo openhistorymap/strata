@@ -9,8 +9,8 @@
 //   {id, cypher, params}     a query, answered once the first part is loaded
 // Messages out: {type: "progress"|"ready"|"dataset"|"failed", ...} and {id, result, ms}
 
-import init, { RelateDb } from "./vendor/relate-wasm/relate.js";
-import { loadPart } from "./loader.js";
+import init, { RelateDb } from "./vendor/relate-wasm/relate.js?v=dev";
+import { loadPart } from "./loader.js?v=dev";
 
 let db = null;
 let coreReady = false;
@@ -64,7 +64,7 @@ async function loadParts(parts) {
 }
 
 async function load(source) {
-  await init({ module_or_path: new URL("./vendor/relate-wasm/relate_bg.wasm", import.meta.url) });
+  await init({ module_or_path: new URL("./vendor/relate-wasm/relate_bg.wasm?v=dev", import.meta.url) });
   db = new RelateDb();
   if (source.urls) {
     // Start every download now; load each part as soon as its turn comes.

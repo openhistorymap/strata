@@ -2,7 +2,7 @@
 
 export class GraphClient {
   constructor(onEvent) {
-    this.worker = new Worker(new URL("./worker.js", import.meta.url), { type: "module" });
+    this.worker = new Worker(new URL("./worker.js?v=dev", import.meta.url), { type: "module" });
     this.pending = new Map();
     this.next = 1;
     this.worker.onmessage = (e) => {

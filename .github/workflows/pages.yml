@@ -28,6 +28,13 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: actions/configure-pages@v5
+      # Version every script, stylesheet and the WASM by commit, so browsers
+      # (Cloudflare tells them to keep .js for hours) never mix two deploys.
+      - name: Stamp asset versions
+        run: |
+          v="${GITHUB_SHA::10}"
+          grep -rl --include='*.js' --include='*.html' '?v=dev' web | xargs sed -i "s/?v=dev/?v=${v}/g"
+          grep -rn "?v=${v}" web --include='*.js' --include='*.html' | wc -l
       - uses: actions/upload-pages-artifact@v3
         with:
           path: web

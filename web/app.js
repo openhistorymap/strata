@@ -1,8 +1,8 @@
 // Strata viewer: every panel is a Cypher query against Relate (WASM) in a worker.
 
-import { GraphClient } from "./db.js";
-import { Q, EXAMPLES } from "./queries.js";
-import { layout } from "./matrix.js";
+import { GraphClient } from "./db.js?v=dev";
+import { Q, EXAMPLES } from "./queries.js?v=dev";
+import { layout } from "./matrix.js?v=dev";
 
 // ------------------------------------------------------------------ helpers --
 
@@ -163,7 +163,9 @@ function openSource(source) {
 
 function builtinSource(d) {
   const base = new URL("./data/", location.href);
-  return { kind: "builtin", id: d.id, dataset: d, load: { urls: d.parts.map((p) => new URL(p.path, base).href) } };
+  // The build time versions each part, so a new export is never mixed with a cached old one.
+  const v = encodeURIComponent(d.built || "");
+  return { kind: "builtin", id: d.id, dataset: d, load: { urls: d.parts.map((p) => new URL(`${p.path}?v=${v}`, base).href) } };
 }
 
 function setQuery(params) {
@@ -273,7 +275,7 @@ drop.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " "
 
 async function boot() {
   try {
-    const res = await fetch(new URL("./data/datasets.json", location.href));
+    const res = await fetch(new URL("./data/datasets.json", location.href), { cache: "no-cache" });
     if (res.ok) catalogue = (await res.json()).datasets || [];
   } catch { /* no catalogue: URL and local files still work */ }
   const params = new URLSearchParams(location.search);
