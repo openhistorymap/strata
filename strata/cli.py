@@ -14,6 +14,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import sys
 import time
 from pathlib import Path
@@ -150,12 +151,14 @@ def cmd_export_web(args) -> None:
 
 def cmd_mcp(args) -> None:
     from .mcp_server import serve
-    serve(args.db)
+    how = "--db" if "--db" in sys.argv else "$STRATA_DB" if os.environ.get("STRATA_DB") else "repository default"
+    serve(args.db, how=how)
 
 
 def main(argv: list[str] | None = None) -> None:
     p = argparse.ArgumentParser(prog="strata", description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    p.add_argument("--db", default=str(DEFAULT_DB), help="Relate store file (default: data/strata.rl)")
+    p.add_argument("--db", default=os.environ.get("STRATA_DB") or str(DEFAULT_DB),
+                   help="Relate store file (default: $STRATA_DB, else data/strata.rl)")
     sub = p.add_subparsers(dest="cmd", required=True)
 
     s = sub.add_parser("fetch", help="download a site from Open Context and normalise it into data/sources/")

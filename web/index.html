@@ -36,6 +36,7 @@
     <span class="bar"><span id="engine-bar"></span></span>
   </div>
   <nav class="links">
+    <span class="webmcp" id="webmcp" hidden></span>
     <button type="button" id="console-toggle" class="ghost" title="Cypher console (Ctrl+`)">Cypher console</button>
     <button type="button" id="theme" class="ghost">◐ Auto</button>
     <a href="https://github.com/openhistorymap/strata" class="ghost">GitHub</a>
@@ -133,6 +134,8 @@ ORDER BY n DESC</textarea>
     <code>uv run strata --db my-dig.rl import-matrix my.hmcx --site my-dig</code><br>
     <code>uv run strata --db my-dig.rl export-web --site my-dig --bundle my-dig.strata.json</code></p>
 </dialog>
+
+<div class="agent-toast" id="agent-toast" role="status" aria-live="polite" hidden></div>
 
 <div class="drop-overlay" aria-hidden="true"><div>Drop to open this file in Relate, in this tab</div></div>
 

@@ -6,3 +6,4 @@ data/raw/
 *.building.rl
 /scratch/
 node_modules/
+dist/

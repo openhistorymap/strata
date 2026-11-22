@@ -3,6 +3,7 @@
 import { GraphClient } from "./db.js?v=dev";
 import { Q, EXAMPLES } from "./queries.js?v=dev";
 import { layout } from "./matrix.js?v=dev";
+import { registerTools } from "./webmcp.js?v=dev";
 
 // ------------------------------------------------------------------ helpers --
 
@@ -778,4 +779,32 @@ editor.addEventListener("keydown", (e) => {
 window.addEventListener("resize", () => frame(state.unit));
 window.addEventListener("hashchange", () => { const t = parseHash(); if (t && db) goTo(t); });
 
+// ------------------------------------------------------------------ WebMCP --
+
+let toastTimer = null;
+function notify(text) {
+  const el = $("#agent-toast");
+  el.replaceChildren(h("b", {}, "Agent"), " ", text);
+  el.hidden = false;
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => { el.hidden = true; }, 4000);
+}
+
+async function startWebMCP() {
+  const reg = await registerTools({
+    db: () => db,
+    state: () => state,
+    source: () => state.source,
+    catalogue: () => catalogue,
+    goTo, showTrench, openBuiltin, openUrl, openConsole, notify,
+  });
+  const badge = $("#webmcp");
+  if (reg && reg.count) {
+    badge.hidden = false;
+    badge.textContent = `WebMCP · ${reg.count} tools`;
+    badge.title = `This page offers ${reg.count} tools to AI agents in your browser (WebMCP):\n${reg.names.join("\n")}`;
+  }
+}
+
 boot();
+startWebMCP().catch((e) => console.warn("WebMCP:", e));

@@ -165,9 +165,44 @@ Strata's MCP server adds domain tools on top of Cypher, such as `describe`, `rel
 - `add_note`
 - `history` and `revert`
 
+`store_info` says which `.rl` file the server is reading and writing.
+
+**Claude Desktop.** Download `strata.mcpb` from the [latest release](https://github.com/openhistorymap/strata/releases/latest) and open it, or drag it onto *Settings → Extensions*. Claude Desktop installs the Python dependencies itself. The extension carries the Kenan Tepe store as a read-only seed. On first run that seed is copied to `Documents/Strata/strata.rl`, which the server reads and writes, so edits survive updates and the file is yours to see and back up. The extension's *Strata store* setting points it at any other `.rl` file. To build the bundle yourself:
+
+```bash
+uv run python desktop/build.py                                   # -> dist/strata-desktop/
+npx -y @anthropic-ai/mcpb pack dist/strata-desktop dist/strata.mcpb
+```
+
+From a clone instead, add this to `claude_desktop_config.json` (the path to the `.rl` file is optional):
+
+```json
+{
+  "mcpServers": {
+    "strata": {
+      "command": "uv",
+      "args": ["run", "--directory", "/path/to/strata", "strata", "mcp"],
+      "env": { "STRATA_DB": "/path/to/strata/data/strata.rl" }
+    }
+  }
+}
+```
+
+**Claude Code:**
+
 ```bash
 claude mcp add strata -- uv run --directory "$PWD" strata mcp
 ```
+
+**Agents in the browser (WebMCP).** The [viewer](https://www.openhistorymap.org/strata/) registers tools with [WebMCP](https://webmachinelearning.github.io/webmcp/) (`document.modelContext`, or `navigator.modelContext` in Chrome 146+ and the MCP-B polyfill). A browser agent can use them to:
+
+- ask what is loaded (`strata_dataset`);
+- list trenches and issues;
+- describe a unit;
+- see how two units relate, with the chain of records;
+- run read-only Cypher against the graph in the tab.
+
+It can also drive the page: `strata_show_unit` opens a unit in the matrix, `strata_show_query` runs a query in the console, and `strata_open_dataset` loads another dataset. A **WebMCP** badge appears in the header when the browser supports it, and a toast shows each call an agent makes. These tools only read: the graph in the page is never edited by agents.
 
 Then ask, for example:
 

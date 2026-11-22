@@ -1,0 +1,48 @@
+{
+  "manifest_version": "0.4",
+  "name": "strata",
+  "display_name": "Strata: an excavation as one graph",
+  "version": "0.0.0",
+  "description": "Question and carefully edit an archaeological excavation (Harris matrix, finds, periods, contradictions) held in one Relate graph file.",
+  "long_description": "Strata holds the full published record of Kenan Tepe (Open Context, CC BY 4.0): 3,280 stratigraphic units, the relations between them, 19,742 finds and the 268 places where the excavators' own records disagree. Ask what a unit seals, how two units relate and why, a date bracket, where a find came from. Edits (propose_relation, resolve_order, assign_phase, add_note) are checked against the stratigraphy in a transaction and refused, with the chain of records, when they contradict it; accepted edits are logged and can be reverted.\n\nYour data stays in one file you can see: by default Documents/Strata/strata.rl, created from the bundled store on first run. Point the 'Strata store' setting at any other .rl file to use that one. The store_info tool always says which file is in use.",
+  "author": {
+    "name": "Open History Map contributors",
+    "url": "https://www.openhistorymap.org/"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/openhistorymap/strata"
+  },
+  "homepage": "https://www.openhistorymap.org/strata/",
+  "documentation": "https://github.com/openhistorymap/strata#readme",
+  "support": "https://github.com/openhistorymap/strata/issues",
+  "icon": "icon.png",
+  "server": {
+    "type": "uv",
+    "entry_point": "server.py",
+    "mcp_config": {
+      "command": "uv",
+      "args": ["run", "--directory", "${__dirname}", "server.py"],
+      "env": {
+        "STRATA_DB": "${user_config.store}"
+      }
+    }
+  },
+  "user_config": {
+    "store": {
+      "type": "file",
+      "title": "Strata store (.rl)",
+      "description": "A Strata/Relate store file to use instead of Documents/Strata/strata.rl (which is created from the bundled Kenan Tepe store on first run). Edits are written to this file.",
+      "required": false
+    }
+  },
+  "tools": [],
+  "compatibility": {
+    "platforms": ["darwin", "win32", "linux"],
+    "runtimes": {
+      "python": ">=3.11"
+    }
+  },
+  "keywords": ["archaeology", "harris-matrix", "stratigraphy", "excavation", "graph", "relate", "cypher"],
+  "license": "Apache-2.0"
+}

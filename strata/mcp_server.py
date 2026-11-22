@@ -36,6 +36,8 @@ results; (:Edit)-[:TOUCHED]->(:Context) is the interpretive history.
 Context.depth is the unit's row in the Harris matrix (0 = top/latest).
 
 Name units by full path, e.g. "Area D/Trench 6/Locus 20".
+store_info says which .rl file you are reading and writing; say so when the user asks
+where their data or edits are.
 
 Rules:
 - Answer from the graph. Cite unit paths and, for claims, the records that state them.
@@ -49,6 +51,7 @@ Rules:
 mcp = FastMCP(name="Strata", instructions=INSTRUCTIONS)
 
 _db_path: str = str(DEFAULT_DB)
+_db_how: str = "default"
 _pool = ThreadPoolExecutor(max_workers=1, thread_name_prefix="relate")
 _store: Store | None = None
 
@@ -77,6 +80,27 @@ async def _on_db(fn: Callable[..., Any], *args: Any, **kwargs: Any) -> Any:
 
 
 # ---------------------------------------------------------------- reading --
+
+
+@mcp.tool
+async def store_info() -> dict:
+    """Which Relate file this server reads and writes (path, size, last change), why that file,
+    the sites in it, and how many interpretive edits it holds."""
+    def info(store: Store) -> dict:
+        from datetime import datetime, timezone
+        from pathlib import Path
+        p = Path(store.path)
+        st = p.stat() if p.exists() else None
+        return {
+            "path": str(p.resolve()),
+            "chosen_because": _db_how,
+            "bytes": st.st_size if st else None,
+            "modified": datetime.fromtimestamp(st.st_mtime, timezone.utc).isoformat(timespec="seconds") if st else None,
+            "mode": "single-file Relate store, opened read-write by this server",
+            "sites": store.run("MATCH (s:Site) RETURN s.id AS id, s.name AS name ORDER BY id"),
+            "edits": store.value("MATCH (e:Edit) RETURN count(e)"),
+        }
+    return await _on_db(info)
 
 
 @mcp.tool
@@ -205,9 +229,9 @@ async def recheck(site: str) -> dict:
     return await _on_db(run_checks, site)
 
 
-def serve(db_path: str = str(DEFAULT_DB)) -> None:
-    global _db_path
-    _db_path = db_path
+def serve(db_path: str = str(DEFAULT_DB), how: str = "command line") -> None:
+    global _db_path, _db_how
+    _db_path, _db_how = db_path, how
     try:
         mcp.run(show_banner=False)
     finally:
