@@ -1,0 +1,509 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Strata · documentation</title>
+<meta name="description" content="Strata holds an archaeological excavation as one Relate graph file: the Harris matrix, finds, periods and the contradictions in the record. How to use it in the browser, Claude Desktop, Claude Code, the command line and Python.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect y='1' width='16' height='4' fill='%23b5763f'/%3E%3Crect y='6' width='16' height='4' fill='%238a9a5b'/%3E%3Crect y='11' width='16' height='4' fill='%235d7d9a'/%3E%3C/svg%3E">
+<script>
+  try {
+    const m = localStorage.getItem("strata-theme") || "auto";
+    document.documentElement.dataset.theme = m === "auto" ? (matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light") : m;
+  } catch (e) {}
+</script>
+<meta name="color-scheme" content="light dark">
+<!-- "?v=dev" is replaced by the commit hash when GitHub Pages deploys. -->
+<link rel="stylesheet" href="../theme.css?v=dev">
+<link rel="stylesheet" href="docs.css?v=dev">
+</head>
+<body>
+<header class="top">
+  <a class="brand" href="../">
+    <span class="mark" aria-hidden="true"><i></i><i></i><i></i></span>
+    <span><b>Strata</b> <span class="sub">documentation</span></span>
+  </a>
+  <nav class="links">
+    <a href="../" class="ghost">Open the viewer</a>
+    <a href="https://github.com/openhistorymap/strata" class="ghost">GitHub</a>
+    <a href="https://github.com/openhistorymap/strata/releases/latest" class="ghost">Claude Desktop extension</a>
+    <button type="button" id="theme" class="ghost">◐ Auto</button>
+  </nav>
+</header>
+
+<div class="page">
+<nav class="toc" aria-label="Contents">
+  <p class="toc-title">Contents</p>
+  <ol>
+    <li><a href="#what">What Strata is</a></li>
+    <li><a href="#start">Getting started</a></li>
+    <li><a href="#data">The data: Kenan Tepe</a></li>
+    <li><a href="#model">The graph model</a></li>
+    <li><a href="#relate">How Strata uses Relate</a></li>
+    <li><a href="#reasoning">Stratigraphic reasoning</a></li>
+    <li><a href="#issues">Issue kinds</a></li>
+    <li><a href="#viewer">The browser viewer</a></li>
+    <li><a href="#webmcp">Browser agents (WebMCP)</a></li>
+    <li><a href="#mcp">MCP server and tools</a></li>
+    <li><a href="#edits">Edits, history and revert</a></li>
+    <li><a href="#desktop">Claude Desktop</a></li>
+    <li><a href="#code">Claude Code and other hosts</a></li>
+    <li><a href="#cli">Command line</a></li>
+    <li><a href="#formats">File formats</a></li>
+    <li><a href="#python">Python API</a></li>
+    <li><a href="#dev">Development and deployment</a></li>
+    <li><a href="#limits">Limits and known issues</a></li>
+    <li><a href="#licences">Data, licences, credits</a></li>
+  </ol>
+</nav>
+
+<main class="doc">
+
+<section id="what">
+<h1>Strata: an excavation as one graph</h1>
+<p class="lede">Strata holds an archaeological excavation as a single <a href="https://relatedb.ai/">Relate</a> graph file. Every find is connected to the layer it came from, the layers above and below it, its period and its site. Checks that run as Cypher inside the file show where the excavators' own records disagree.</p>
+<p>The store in the repository, <code>data/strata.rl</code>, holds the complete published record of <b>Kenan Tepe</b>, a mound on the Upper Tigris in south-eastern Turkey, excavated from 1998 to 2007 and published openly on Open Context:</p>
+<ul class="facts">
+  <li><b>3,280</b> stratigraphic units</li>
+  <li><b>14,576</b> recorded relations between them</li>
+  <li><b>19,742</b> finds, with animal bones linked to GBIF taxa</li>
+  <li><b>268</b> open issues where the records disagree</li>
+</ul>
+<p>The same graph can be used in five ways:</p>
+<table>
+  <thead><tr><th>Where</th><th>What you get</th><th>Section</th></tr></thead>
+  <tbody>
+    <tr><td>Browser</td><td>The viewer: Harris matrix per trench, unit records, issues, a Cypher console. Relate runs in the tab.</td><td><a href="#viewer">Viewer</a></td></tr>
+    <tr><td>Browser agent</td><td>Nine WebMCP tools an AI agent in the browser can call.</td><td><a href="#webmcp">WebMCP</a></td></tr>
+    <tr><td>Claude Desktop</td><td>A one-click extension with 19 tools, including checked edits.</td><td><a href="#desktop">Desktop</a></td></tr>
+    <tr><td>Claude Code, other MCP hosts</td><td>The same MCP server over stdio.</td><td><a href="#code">Claude Code</a></td></tr>
+    <tr><td>Terminal, Python</td><td>The <code>strata</code> command and the <code>strata</code> package.</td><td><a href="#cli">CLI</a>, <a href="#python">Python</a></td></tr>
+  </tbody>
+</table>
+</section>
+
+<section id="start">
+<h2>Getting started</h2>
+<h3>In the browser</h3>
+<p>Open <a href="../">the viewer</a>. The matrix is usable after about five seconds; the finds load behind it. Two good places to start:</p>
+<ul>
+  <li><a href="../#Area%20F%2FTrench%201%2FLocus%201032">Area F / Trench 1 / Locus 1032</a>: dated Late Chalcolithic but lying above an Early Bronze Age I unit. The excavator's note says the bricks "may have been ancient trash", that is, redeposited older material.</li>
+  <li><a href="../#Area%20A%2FTrench%209%2FLocus%202">Area A / Trench 9 / Locus 2</a>: recorded both above and below Locus 4. The note explains why: "we separated L2 and L4 earlier in the season but found that they were equal".</li>
+</ul>
+<h3>In Claude Desktop</h3>
+<p>Download <code>strata.mcpb</code> from the <a href="https://github.com/openhistorymap/strata/releases/latest">latest release</a> and open it. Then ask, for example, <em>"What does Locus 20 in Area D, Trench 6 seal?"</em> See <a href="#desktop">Claude Desktop</a>.</p>
+<h3>From a clone</h3>
+<p>You need Python 3.11+ and <a href="https://docs.astral.sh/uv/">uv</a>.</p>
+<pre><code>git clone https://github.com/openhistorymap/strata
+cd strata
+uv sync
+uv run strata ask overview
+uv run strata ask describe "Area F/Trench 1/Locus 1032"
+uv run strata query "MATCH (i:Issue) RETURN i.kind, count(*) ORDER BY count(*) DESC"</code></pre>
+</section>
+
+<section id="data">
+<h2>The data: Kenan Tepe</h2>
+<p>Kenan Tepe (<a href="https://www.wikidata.org/entity/Q6098540">Wikidata Q6098540</a>) was excavated by the Upper Tigris Archaeological Research Project. Its records were published as <em>Bradley Parker and Peter Cobb (eds.), Kenan Tepe, Open Context, 2012</em>, <a href="https://doi.org/10.6078/M7H41PBJ">doi:10.6078/M7H41PBJ</a>, under CC BY 4.0.</p>
+<p><code>strata fetch kenan-tepe</code> downloads every locus record and finds record through the Open Context API. It reduces them to three CSV files under <code>data/sources/kenan-tepe/</code>, one row per relation <em>as recorded</em>, with the record that states it. <code>strata build</code> turns those into the graph and runs every check.</p>
+<table>
+  <thead><tr><th>In the store</th><th class="n">Count</th></tr></thead>
+  <tbody>
+    <tr><td>Contexts (loci, the stratigraphic units)</td><td class="n">3,280</td></tr>
+    <tr><td>Trenches</td><td class="n">68</td></tr>
+    <tr><td>Finds</td><td class="n">19,742</td></tr>
+    <tr><td>Periods</td><td class="n">7</td></tr>
+    <tr><td>Taxa (GBIF)</td><td class="n">66</td></tr>
+    <tr><td><code>:ABOVE</code> relations (after merging reciprocal records)</td><td class="n">4,993</td></tr>
+    <tr><td><code>:CONTESTED</code> claims set aside</td><td class="n">316</td></tr>
+    <tr><td><code>:SAME_AS</code> / <code>:ABUTS</code> / <code>:WITHIN</code></td><td class="n">559 / 3,699 / 258</td></tr>
+    <tr><td>Rows in the site's Harris matrix</td><td class="n">37</td></tr>
+    <tr><td>Open issues</td><td class="n">268</td></tr>
+  </tbody>
+</table>
+</section>
+
+<section id="model">
+<h2>The graph model</h2>
+<p>Every node and relationship type, as stored in <code>data/strata.rl</code> and in the browser:</p>
+<pre class="model"><code>(:Site)&lt;-[:IN_SITE]-(:Trench)&lt;-[:IN_TRENCH]-(:Context)           a Context is a stratigraphic unit (locus, layer, cut, fill, wall)
+(:Context)-[:IN_SITE]-&gt;(:Site)                                    a unit recorded without a trench
+(:Context)-[:ABOVE {verbs, stated_by, sources, redundant}]-&gt;(:Context)   later -&gt; earlier
+(:Context)-[:CONTESTED]-&gt;(:Context)                              an ABOVE claim set aside: it contradicts another
+(:Context)-[:REJECTED {rejected_by}]-&gt;(:Context)                 a claim an archaeologist ruled out (kept, not deleted)
+(:Context)-[:SAME_AS|ABUTS|WITHIN]-&gt;(:Context)
+(:Find)-[:FROM {bag}]-&gt;(:Context)      (:Find)-[:IDENTIFIED_AS]-&gt;(:Taxon {uri})
+(:Context)-[:DATED_TO {basis}]-&gt;(:Period)-[:OF_SITE]-&gt;(:Site)
+(:Context)-[:IN_PHASE]-&gt;(:Phase)-[:OF_SITE]-&gt;(:Site)
+(:Issue {kind, severity, detail, records, status})-[:INVOLVES {position}]-&gt;(:Context)
+(:Edit {op, args, note, author, ts, status})-[:TOUCHED]-&gt;(:Context)</code></pre>
+
+<h3>Nodes</h3>
+<table>
+  <thead><tr><th>Label</th><th>Key</th><th>Main properties</th></tr></thead>
+  <tbody>
+    <tr><td><code>Site</code></td><td><code>id</code></td><td>name, description, country, location (point), wikidata, source, source_uri, license, license_label, recording_system</td></tr>
+    <tr><td><code>Trench</code></td><td><code>uid</code></td><td>name ("Area F/Trench 1"), site</td></tr>
+    <tr><td><code>Context</code></td><td><code>uid</code></td><td>label, path ("Area F/Trench 1/Locus 1032"), area, trench, type, description (the excavator's note), period_label, start_year, end_year, excavated_from/to, top_depth, bottom_depth, location (point), uri, citation, <b>depth</b> (row in the matrix, 0 = top)</td></tr>
+    <tr><td><code>Find</code></td><td><code>uid</code></td><td>label, category, material, type, taxon, start_year, end_year, uri, thumbnail</td></tr>
+    <tr><td><code>Period</code></td><td><code>uid</code></td><td>name, start_year, end_year, site</td></tr>
+    <tr><td><code>Phase</code></td><td><code>uid</code></td><td>name, site</td></tr>
+    <tr><td><code>Taxon</code></td><td><code>uri</code> (GBIF)</td><td>name</td></tr>
+    <tr><td><code>Issue</code></td><td><code>id</code></td><td>kind, severity, detail, records, status ('open')</td></tr>
+    <tr><td><code>Edit</code></td><td><code>id</code></td><td>op, args (JSON), note, author, ts, status</td></tr>
+  </tbody>
+</table>
+<p>Every key has a uniqueness constraint. <code>Context</code> is also indexed on site, label and depth, <code>Find</code> on label, and <code>Issue</code> on kind. The schema is <a href="https://github.com/openhistorymap/strata/blob/main/strata/schema.cypher"><code>strata/schema.cypher</code></a>.</p>
+
+<h3>Conventions</h3>
+<ul>
+  <li><b>Direction.</b> <code>(a)-[:ABOVE]-&gt;(b)</code> means <em>a is later than b</em>: it lies over it, cuts it, fills it or seals it. <code>r.verbs</code> says which; <code>r.stated_by</code> lists the unit records that state it, and <code>r.sources</code> their Open Context URIs.</li>
+  <li><b>Reciprocal records merged.</b> "A above B" in A's record and "B below A" in B's record become one edge with both records in <code>stated_by</code>.</li>
+  <li><b>Years are astronomical.</b> <code>-3099</code> is 3100 BCE; year 0 is 1 BCE.</li>
+  <li><b>Dates are tentative.</b> Kenan Tepe's periods come from field phasing. Units labelled "A / B" are linked to both periods with <code>basis: 'either'</code>.</li>
+  <li><b>Contradictions are kept.</b> Nothing a record says is deleted. Claims that contradict others are retyped <code>:CONTESTED</code> so the rest is a clean matrix, and claims ruled out by a person become <code>:REJECTED</code>.</li>
+</ul>
+</section>
+
+<section id="relate">
+<h2>How Strata uses Relate</h2>
+<p><b>Mode: single file.</b> An excavation archive is a document: it is deposited, cited, copied to a field laptop and handed to the next specialist. One <code>.rl</code> file is all of that. Relate opens it in-process, with no server.</p>
+<table>
+  <thead><tr><th>Where</th><th>Relate build</th><th>Store</th></tr></thead>
+  <tbody>
+    <tr><td>CLI, Python, MCP server, Claude Desktop</td><td>Python wheel <code>relate-db</code> 1.2 (<code>import relate</code>)</td><td><code>data/strata.rl</code> or your copy, read-write</td></tr>
+    <tr><td>Official <code>relate</code> CLI</td><td>Native binary 1.2</td><td>The same file: <code>relate --database data/strata.rl "MATCH …"</code></td></tr>
+    <tr><td>Browser viewer</td><td><code>@relate/relate-wasm</code> 1.2.0 in a Web Worker</td><td>In memory, loaded from a JSON export (the WASM build cannot open <code>.rl</code>)</td></tr>
+  </tbody>
+</table>
+<ul>
+  <li><b>Transactions.</b> Every proposed edit is one transaction. The new relationship and a loop check run together; it commits with its <code>:Edit</code> log entry, or rolls back and leaves no trace.</li>
+  <li><b>Read-only access.</b> The <code>query</code> tool and <code>strata query</code> refuse write clauses and run in a transaction that is always rolled back. The CLI opens the store read-only, so reading never changes the file.</li>
+  <li><b>One writer.</b> Relate connections belong to the thread that opened them. The MCP server opens the store on one worker thread and hands every tool call to it, so two agents calling at once are serialised.</li>
+  <li><b>All reasoning is Cypher.</b> Matrix rows, contradictions, redundancy, date brackets and provenance are queries; see <a href="https://github.com/openhistorymap/strata/blob/main/strata/checks.py"><code>checks.py</code></a> and <a href="https://github.com/openhistorymap/strata/blob/main/strata/queries.py"><code>queries.py</code></a>. A full rebuild, import plus every check, takes about 20 seconds; questions answer in milliseconds.</li>
+</ul>
+</section>
+
+<section id="reasoning">
+<h2>Stratigraphic reasoning</h2>
+<p>An excavation records stratigraphy one unit at a time: "this is above 17, 49 and 53; it is cut by 29". Together those statements form a directed graph that should be acyclic: the <a href="https://en.wikipedia.org/wiki/Harris_matrix">Harris matrix</a>. <code>strata check</code> (also run by <code>build</code> and the <code>recheck</code> tool) does this, in order:</p>
+<ol>
+  <li><b>Two-way contradictions.</b> Pairs ordered both ways are found by pattern matching. Both claims are retyped <code>:CONTESTED</code> and the pair becomes an issue (self-contradiction, enclosed, cut-or-cover or conflicting records).</li>
+  <li><b>Matrix rows and longer loops.</b> <code>Context.depth</code> is computed by peeling the <code>:ABOVE</code> graph one layer per statement (Kahn's algorithm). Units left unplaced sit on a loop: <code>shortestPath</code> finds it, its closing edge is contested, and peeling resumes (up to 25 rounds).</li>
+  <li><b>Other checks.</b> Same-as conflicts, elevation conflicts (5 cm tolerance; cuts excluded) and period inversions.</li>
+  <li><b>Redundant edges.</b> An <code>:ABOVE</code> edge implied by a longer path is flagged <code>redundant: true</code>. The rest, the transitive reduction, is what a Harris matrix draws.</li>
+  <li><b>Issues.</b> Results are written as <code>:Issue</code> nodes linked to their units, replacing the previous run's.</li>
+</ol>
+<h3>Date brackets</h3>
+<p>A unit cannot be earlier than anything it seals, nor later than anything sealing it:</p>
+<ul>
+  <li><b>Not earlier than</b> (<i>terminus post quem</i>): the latest start year among dated units below it.</li>
+  <li><b>Not later than</b> (<i>terminus ante quem</i>): the earliest end year among dated units above it.</li>
+</ul>
+<p>The viewer compares the recorded date with the bracket. It says whether the date fits, contradicts the stratigraphy, or fits only at the very edge of its range, as Locus 1032 does.</p>
+</section>
+
+<section id="issues">
+<h2>Issue kinds</h2>
+<table>
+  <thead><tr><th>Kind</th><th>Severity</th><th>Meaning</th><th class="n">Kenan Tepe</th></tr></thead>
+  <tbody>
+    <tr><td><code>self_contradiction</code></td><td class="sev error">error</td><td>One unit's record lists the same unit as both above and below it.</td><td class="n">86</td></tr>
+    <tr><td><code>same_as_conflict</code></td><td class="sev error">error</td><td>Two units recorded as one, yet one lies above the other.</td><td class="n">66</td></tr>
+    <tr><td><code>conflicting_records</code></td><td class="sev error">error</td><td>Two records order the same pair in opposite directions.</td><td class="n">23</td></tr>
+    <tr><td><code>cycle</code></td><td class="sev error">error</td><td>A longer loop: A above B above C above A.</td><td class="n">16</td></tr>
+    <tr><td><code>elevation_conflict</code></td><td class="sev warning">warning</td><td>Recorded above a unit whose bottom elevation is higher than its own top.</td><td class="n">28</td></tr>
+    <tr><td><code>cut_or_cover</code></td><td class="sev warning">warning</td><td>A "cuts" B by one record, B lies "above" A by another: the classic cut/fill ambiguity.</td><td class="n">26</td></tr>
+    <tr><td><code>period_inversion</code></td><td class="sev warning">warning</td><td>An earlier period lying above a later one: residual material, an intrusive unit, or a wrong relation.</td><td class="n">8</td></tr>
+    <tr><td><code>enclosed</code></td><td class="sev info">info</td><td>Above, below <em>and</em> within the same unit: an inclusion, not an order.</td><td class="n">15</td></tr>
+  </tbody>
+</table>
+<p>Ask an agent to <code>explain_issue</code> to see every claim recorded between the units and which record made it.</p>
+</section>
+
+<section id="viewer">
+<h2>The browser viewer</h2>
+<p><a href="../">The viewer</a> runs the whole graph (23,432 nodes, 40,796 relationships) in Relate's WebAssembly build, in a Web Worker in your tab. There is no server behind it.</p>
+<h3>What it shows</h3>
+<ul>
+  <li><b>Trenches</b> (left): each with its units and open issues. Units recorded without a trench form one matrix, "Units without a trench".</li>
+  <li><b>Harris matrix</b> (centre): rows are <code>Context.depth</code>. Boxes are coloured by period and outlined red when the unit has open issues. Contested claims are red dashes and same-as links are dotted. <em>Implied relations</em> shows redundant edges. Drag to pan, scroll to zoom, <b>Fit</b> to see it all.</li>
+  <li><b>Unit</b> (right): the excavator's note, open issues, date bracket and verdict, relations, contested claims with the records that make them, finds by category with taxa, and a link to the Open Context record. Everything it seals is outlined brown, everything sealing it blue.</li>
+  <li><b>Issues</b> tab: all issues by kind. Click one to open its trench with every unit involved highlighted.</li>
+  <li><b>Cypher console</b> (<kbd>Ctrl</kbd>+<kbd>`</kbd>): any Cypher, run with <kbd>Ctrl</kbd>+<kbd>Enter</kbd>, plus seven example queries. Every panel has a <b>Cypher</b> link that opens the query behind it.</li>
+  <li><b>Theme</b>: Auto (follows your system), Light or Dark, remembered.</li>
+</ul>
+<h3>Links</h3>
+<table>
+  <thead><tr><th>URL</th><th>Opens</th></tr></thead>
+  <tbody>
+    <tr><td><code>…/strata/#Area F/Trench 1/Locus 1032</code></td><td>A unit (URL-encode the path)</td></tr>
+    <tr><td><code>…/strata/#Area F/Trench 1</code></td><td>A trench</td></tr>
+    <tr><td><code>…/strata/?dataset=kenan-tepe</code></td><td>A dataset on the site, listed in <code>data/datasets.json</code></td></tr>
+    <tr><td><code>…/strata/?data=https://…/my-dig.strata.json</code></td><td>A Strata export at any URL that allows cross-origin requests (CORS)</td></tr>
+  </tbody>
+</table>
+<h3>Other datasets</h3>
+<p>The chip next to the title always says what is loaded and where it came from. Click it to open a dataset on the site, one at a URL, or a <code>.strata.json</code> file from your computer. You can also drop the file on the page. A local file is read in the tab and never uploaded; while it is loaded, the chip says <b>Local file</b> with its name, size and date. To make one, see <a href="#formats">Bundles</a>.</p>
+<h3>Speed</h3>
+<p>Relate's WASM build loads about 3,000 nodes or relationships a second. The core graph (sites, trenches, units, periods, issues, the matrix) takes about five seconds and is usable at once; finds, taxa and abutments follow in about ten more. Queries take milliseconds.</p>
+</section>
+
+<section id="webmcp">
+<h2>Browser agents (WebMCP)</h2>
+<p>The viewer registers tools with <a href="https://webmachinelearning.github.io/webmcp/">WebMCP</a>, so an AI agent running in your browser can work with the graph in the page. It uses <code>document.modelContext.registerTool</code> from the W3C draft, or <code>navigator.modelContext</code> where the browser provides that instead (Chrome 146+, the MCP-B extension). A <b>WebMCP · 9 tools</b> badge appears in the header when the browser supports it, and a toast shows each call an agent makes.</p>
+<table>
+  <thead><tr><th>Tool</th><th>Does</th><th>Arguments</th></tr></thead>
+  <tbody>
+    <tr><td><code>strata_dataset</code></td><td>What is loaded and from where (built-in, URL, local file), its size, whether loading is complete, other datasets on the site.</td><td>none</td></tr>
+    <tr><td><code>strata_trenches</code></td><td>Every trench with units, open issues and matrix rows.</td><td>none</td></tr>
+    <tr><td><code>strata_issues</code></td><td>Open issues, most severe first, with their units.</td><td><code>kind?</code>, <code>limit?</code></td></tr>
+    <tr><td><code>strata_describe</code></td><td>A unit's record, note, periods, relations, contested claims, issues, date bracket and finds.</td><td><code>unit</code></td></tr>
+    <tr><td><code>strata_relation</code></td><td>Whether a is later, earlier or unrelated to b, with the chain of records and any contested direct claims.</td><td><code>a</code>, <code>b</code></td></tr>
+    <tr><td><code>strata_query</code></td><td>Read-only Cypher against the graph in the tab.</td><td><code>cypher</code>, <code>params?</code>, <code>limit?</code></td></tr>
+    <tr><td><code>strata_show_unit</code></td><td>Opens a unit in the matrix and its record in the side panel.</td><td><code>unit</code></td></tr>
+    <tr><td><code>strata_show_query</code></td><td>Runs a read-only query in the console, for the user to see.</td><td><code>cypher</code>, <code>params?</code></td></tr>
+    <tr><td><code>strata_open_dataset</code></td><td>Replaces the graph with a built-in dataset or one at a URL (marked consequential).</td><td><code>dataset?</code> or <code>url?</code></td></tr>
+  </tbody>
+</table>
+<p>Units are named by full path. A bare label works when it is unique, or unique in the trench on screen; otherwise the tool returns the candidates. Browser agents never edit the graph: the page's tools only read or navigate. Edits are what the MCP server is for.</p>
+</section>
+
+<section id="mcp">
+<h2>MCP server and tools</h2>
+<p><code>strata mcp</code> serves the store over MCP (stdio) with 19 tools. These are what the Claude Desktop extension and Claude Code use. The server's instructions tell agents to answer from the graph, cite unit paths and the records behind each claim, never invent a relation, and ask before settling a dispute.</p>
+<h3>Reading</h3>
+<table>
+  <thead><tr><th>Tool</th><th>Returns</th></tr></thead>
+  <tbody>
+    <tr><td><code>store_info</code></td><td>Which <code>.rl</code> file is read and written (path, size, last change), why that file, its sites, and how many edits it holds.</td></tr>
+    <tr><td><code>overview</code></td><td>Every site: contexts, relations, contested claims, finds, open issues.</td></tr>
+    <tr><td><code>query</code></td><td>Read-only Cypher (always rolled back): columns, rows (at most <code>limit</code>), whether rows were cut.</td></tr>
+    <tr><td><code>describe</code></td><td>One unit: record, matrix depth, what lies directly above and below, same-as units, contested claims, finds, open issues.</td></tr>
+    <tr><td><code>below</code> / <code>above</code></td><td>Every unit earlier than this one (everything it seals) / later than it.</td></tr>
+    <tr><td><code>relation</code></td><td>Earlier, later, same, contested or unknown, with the chain of records that proves it.</td></tr>
+    <tr><td><code>date_bracket</code></td><td>Terminus post quem and ante quem from dated units below and above, and whether the recorded date fits.</td></tr>
+    <tr><td><code>provenance</code></td><td>Find → bag → unit → period → site, the units sealing it, caveats, its date bracket.</td></tr>
+    <tr><td><code>issues</code></td><td>Open problems, most severe first; filter by site and kind.</td></tr>
+    <tr><td><code>explain_issue</code></td><td>An issue's units and every claim recorded between them, with the record that made it.</td></tr>
+    <tr><td><code>period_sequence</code></td><td>Which period lies directly over which, counted over the matrix.</td></tr>
+    <tr><td><code>history</code></td><td>Interpretive edits, newest first.</td></tr>
+  </tbody>
+</table>
+<h3>Writing</h3>
+<table>
+  <thead><tr><th>Tool</th><th>Does</th></tr></thead>
+  <tbody>
+    <tr><td><code>propose_relation</code></td><td>Records that <code>upper</code> is later than <code>lower</code> (verb above, cuts, fills or seals). Refused, with the chain of records, if <code>lower</code> is already later than <code>upper</code>. Warns about period inversions, elevations and same-as links.</td></tr>
+    <tr><td><code>resolve_order</code></td><td>Settles a disputed pair: contrary claims become <code>:REJECTED</code> (kept), a contested claim in the chosen direction is restored. Agents must confirm with the user first.</td></tr>
+    <tr><td><code>assign_phase</code></td><td>Puts units into a phase; warns when units of other phases lie between its members.</td></tr>
+    <tr><td><code>add_note</code></td><td>Attaches an interpretive note to a unit.</td></tr>
+    <tr><td><code>revert</code></td><td>Undoes an edit; the reversal is logged too.</td></tr>
+    <tr><td><code>recheck</code></td><td>Recomputes matrix depth, contested claims and issues for a site.</td></tr>
+  </tbody>
+</table>
+<p>Try asking:</p>
+<ul>
+  <li><em>"Which finds come from units whose date is contradicted by the stratigraphy?"</em></li>
+  <li><em>"Locus 7042 and 7044 in F7 disagree. Show me both records and what else orders them."</em></li>
+  <li><em>"Record that Locus 53 lies above Locus 20 in Trench D6."</em> This is refused, and the answer is the record chain that makes it impossible.</li>
+</ul>
+</section>
+
+<section id="edits">
+<h2>Edits, history and revert</h2>
+<p>Every change an agent or a person makes goes through a tool, never through raw Cypher:</p>
+<ol>
+  <li>A transaction opens and the change is written, marked pending.</li>
+  <li>The loop check runs: is there already a path from <code>lower</code> back to <code>upper</code>? If so, the transaction rolls back and the answer is <code>{accepted: false, refused, chain, records}</code>. The records are the ones that forbid the edit, with paths and Open Context URIs.</li>
+  <li>Otherwise an <code>:Edit</code> node is written (op, arguments, note, author, timestamp) and linked to every unit it touched, the transaction commits, and the checks rerun.</li>
+</ol>
+<p><code>history</code> lists edits; <code>revert</code> undoes one and logs the reversal. Edits live in the store file, so they travel with it. A rebuild from source (<code>strata build</code>) starts from the published record again; keep your working store separate (see <a href="#desktop">Claude Desktop</a>, or set <code>STRATA_DB</code>).</p>
+</section>
+
+<section id="desktop">
+<h2>Claude Desktop</h2>
+<h3>Install</h3>
+<ol>
+  <li>Download <code>strata.mcpb</code> from the <a href="https://github.com/openhistorymap/strata/releases/latest">latest release</a>.</li>
+  <li>Open it, or drag it onto Claude Desktop's <b>Settings → Extensions</b>.</li>
+  <li>Claude Desktop installs Python and the two dependencies (<code>relate-db</code>, <code>fastmcp</code>) itself.</li>
+</ol>
+<h3>Where your data is</h3>
+<p>The extension carries the Kenan Tepe store as a read-only seed and never writes to it. The server picks its store in this order:</p>
+<ol>
+  <li>The extension's <b>Strata store</b> setting, a <code>.rl</code> file you choose (or <code>STRATA_DB</code> in the environment).</li>
+  <li><code>Documents/Strata/strata.rl</code>. On first run it is created from the seed; after that it is reused, so your edits survive extension updates and the file is yours to see, copy and back up.</li>
+</ol>
+<p>Ask for <code>store_info</code> at any time: it reports the path, why it was chosen, its size, last change and number of edits.</p>
+<h3>Without the extension</h3>
+<p>From a clone, add this to <code>claude_desktop_config.json</code>. <code>STRATA_DB</code> is optional.</p>
+<pre><code>{
+  "mcpServers": {
+    "strata": {
+      "command": "uv",
+      "args": ["run", "--directory", "/path/to/strata", "strata", "mcp"],
+      "env": { "STRATA_DB": "/path/to/my/strata.rl" }
+    }
+  }
+}</code></pre>
+<h3>Build the extension</h3>
+<pre><code>uv run python desktop/build.py                                   # -&gt; dist/strata-desktop/
+npx -y @anthropic-ai/mcpb pack dist/strata-desktop dist/strata.mcpb</code></pre>
+<p><code>desktop/build.py</code> copies the server modules and the store, writes a <code>pyproject.toml</code> with only the server's dependencies, and fills the manifest (MCPB 0.4, <code>uv</code> server type) with the version from <code>pyproject.toml</code> and the tool list from the server. Pushing a <code>v*</code> tag builds and attaches it to the release.</p>
+</section>
+
+<section id="code">
+<h2>Claude Code and other hosts</h2>
+<pre><code>claude mcp add strata -- uv run --directory "$PWD" strata mcp</code></pre>
+<p>Any MCP host that runs stdio servers works the same way: run <code>uv run --directory /path/to/strata strata mcp</code>, with <code>STRATA_DB</code> or <code>--db</code> to choose the store.</p>
+<p>Relate's own MCP surface also works on the same file, offering raw Cypher instead of Strata's domain tools:</p>
+<pre><code>relate serve --database data/strata.rl --mcp stdio</code></pre>
+</section>
+
+<section id="cli">
+<h2>Command line</h2>
+<p><code>strata [--db FILE] COMMAND</code>. The store is <code>--db</code>, else <code>$STRATA_DB</code>, else <code>data/strata.rl</code>.</p>
+<table>
+  <thead><tr><th>Command</th><th>Does</th></tr></thead>
+  <tbody>
+    <tr><td><code>fetch SITE</code></td><td>Downloads a site from Open Context and normalises it into <code>data/sources/SITE/</code> (Kenan Tepe: about 5 minutes; raw JSON cached in <code>data/raw/</code>).</td></tr>
+    <tr><td><code>build [SITE…]</code></td><td>Rebuilds the store from <code>data/sources/</code>, runs every check, and refreshes the viewer's data in <code>web/data/</code> (about 20 s).</td></tr>
+    <tr><td><code>import-matrix PATH --site ID [--name --format --license --license-label --source --source-uri]</code></td><td>Adds a Harris-matrix file, in any format <a href="https://github.com/openhistorymap/harris-mcp">harris-mcp</a> reads, then runs the checks.</td></tr>
+    <tr><td><code>check [SITE…]</code></td><td>Recomputes matrix depth, contested edges and issues.</td></tr>
+    <tr><td><code>ask QUESTION ARGS [--site --kind --limit]</code></td><td>Named questions (below).</td></tr>
+    <tr><td><code>query CYPHER [--params JSON] [--limit N]</code></td><td>Read-only Cypher; the store is opened read-only.</td></tr>
+    <tr><td><code>stats</code></td><td>Node and relationship counts.</td></tr>
+    <tr><td><code>export-web [--out DIR]</code></td><td>Every site as <code>DIR/SITE/{core,finds}.json</code>, plus <code>DIR/datasets.json</code> (default <code>web/data</code>).</td></tr>
+    <tr><td><code>export-web --site ID --bundle FILE</code></td><td>One site as a single <code>.strata.json</code> the viewer opens from disk or a URL.</td></tr>
+    <tr><td><code>mcp</code></td><td>Serves the store over MCP (stdio).</td></tr>
+  </tbody>
+</table>
+<h3><code>strata ask</code></h3>
+<table>
+  <thead><tr><th>Question</th><th>Arguments</th><th>Example</th></tr></thead>
+  <tbody>
+    <tr><td><code>overview</code></td><td></td><td><code>strata ask overview</code></td></tr>
+    <tr><td><code>issues</code></td><td><code>--site --kind --limit</code></td><td><code>strata ask issues --kind period_inversion</code></td></tr>
+    <tr><td><code>describe</code></td><td>unit</td><td><code>strata ask describe "Area F/Trench 1/Locus 1032"</code></td></tr>
+    <tr><td><code>below</code> / <code>above</code></td><td>unit</td><td><code>strata ask below "Area D/Trench 6/Locus 20"</code></td></tr>
+    <tr><td><code>relation</code></td><td>unit unit</td><td><code>strata ask relation "Area F/Trench 7/Locus 7042" "Area F/Trench 7/Locus 7044"</code></td></tr>
+    <tr><td><code>bracket</code></td><td>unit</td><td><code>strata ask bracket "Area D/Trench 6/Locus 111"</code></td></tr>
+    <tr><td><code>provenance</code></td><td>find</td><td><code>strata ask provenance "Bone-ID KT00090"</code></td></tr>
+    <tr><td><code>periods</code></td><td>site</td><td><code>strata ask periods kenan-tepe</code></td></tr>
+  </tbody>
+</table>
+<p>Units can be named by uid, full path, label, or the end of a path ("Trench 6/Locus 20"); <code>--site</code> narrows the search.</p>
+</section>
+
+<section id="formats">
+<h2>File formats</h2>
+<h3>Relate store (<code>.rl</code>)</h3>
+<p>Relate's single-file format. Inspect it with <code>relate info --database data/strata.rl</code>, query it with the <code>relate</code> CLI or <code>strata query</code>.</p>
+<h3>Normalised sources (<code>data/sources/SITE/</code>)</h3>
+<table>
+  <thead><tr><th>File</th><th>Columns</th></tr></thead>
+  <tbody>
+    <tr><td><code>site.json</code></td><td>id, name, description, country, location [lat, lon], wikidata, source, source_uri, license, license_label, recording_system; optionally <code>matrix</code> (a Harris-matrix file to read instead of the CSVs)</td></tr>
+    <tr><td><code>contexts.csv</code></td><td>uid, site, label, area, trench, path, type, period_label, start_year, end_year, excavated_from, excavated_to, top_depth, bottom_depth, context_rating, recorded_by, latitude, longitude, description, uri, citation</td></tr>
+    <tr><td><code>statements.csv</code></td><td>subject, verb, object, source: one row per relation as recorded. Verbs: above, below, cuts, cut_by, fills, filled_by, seals, sealed_by (→ <code>ABOVE</code>); equals, equal, contemporary (→ <code>SAME_AS</code>); abuts; within, contains.</td></tr>
+    <tr><td><code>finds.csv</code></td><td>uid, site, label, category, context, bag, material, type, taxon, taxon_uri, start_year, end_year, uri, thumbnail</td></tr>
+  </tbody>
+</table>
+<h3>Harris-matrix files</h3>
+<p><code>strata import-matrix</code> reads whatever <a href="https://github.com/openhistorymap/harris-mcp">harris-mcp</a> reads: HMDP JSON, Harris Matrix Composer <code>.hmc</code>/<code>.hmcx</code>, the Harris Matrix Data Package (folder, <code>datapackage.json</code> or zip), CSV and XLSX.</p>
+<h3>Viewer export (<code>strata-web</code>, version 1)</h3>
+<p>The browser can't open <code>.rl</code>, so the graph travels as JSON. A <b>part</b> is:</p>
+<pre><code>{
+  "meta":  {"part": "core", "dataset": "kenan-tepe", "built": "2026-11-22T12:49:59Z", "schema": ["CREATE CONSTRAINT …", …]},
+  "nodes": [{"label": "Context", "key": "uid", "rows": [{"p": {…properties}, "pt": {"location": {"latitude": …, "longitude": …}}}]}],
+  "edges": [{"type": "ABOVE", "from": ["Context", "uid"], "to": ["Context", "uid"], "rows": [[fromKey, toKey, {…properties}]]}]
+}</code></pre>
+<p>A site is two parts: <code>core</code> (site, trenches, units, periods, phases, issues and their relationships) and <code>finds</code> (finds, taxa, <code>FROM</code>, <code>IDENTIFIED_AS</code>, <code>ABUTS</code>). On the site they are separate files listed in <code>datasets.json</code>:</p>
+<pre><code>{"format": "strata-web", "version": 1, "datasets": [
+  {"id": "kenan-tepe", "name": "Kenan Tepe", "source": "…", "license": "CC BY 4.0", "built": "…", "store": "strata.rl",
+   "parts": [{"path": "kenan-tepe/core.json", "bytes": …, "nodes": 3624, "relationships": 12448}, …]}]}</code></pre>
+<p>A <b>bundle</b> (<code>.strata.json</code>) is one site in one file, for local files and URLs:</p>
+<pre><code>{"format": "strata-web", "version": 1, "dataset": {…as in datasets.json}, "parts": [core, finds]}</code></pre>
+<p>Make one from any excavation Strata can import:</p>
+<pre><code>uv run strata --db my-dig.rl import-matrix my.hmcx --site my-dig --name "My dig"
+uv run strata --db my-dig.rl export-web --site my-dig --bundle my-dig.strata.json</code></pre>
+<p>The viewer rebuilds the graph with <code>UNWIND $rows AS r CREATE (n:Label {…})</code> in batches of 1,000. Labels, keys and property names must be plain identifiers; values are passed as parameters, and only <code>http(s)</code> links become clickable.</p>
+</section>
+
+<section id="python">
+<h2>Python API</h2>
+<pre><code>from strata.store import Store
+from strata import queries as Q, edits as E
+
+with Store("data/strata.rl", read_only=True) as s:
+    Q.describe(s, "Area F/Trench 1/Locus 1032")
+    Q.relation(s, "Area F/Trench 7/Locus 7042", "Area F/Trench 7/Locus 7044")
+    s.run("MATCH (i:Issue) RETURN i.kind AS kind, count(*) AS n")       # autocommit
+    s.read("MATCH (c:Context) RETURN c.path LIMIT 5")                   # always rolled back
+
+with Store("my-copy.rl") as s:
+    try:
+        E.propose_relation(s, "Area D/Trench 6/Locus 53", "Area D/Trench 6/Locus 20", note="…")
+    except E.Rejected as r:
+        print(r.reason, r.evidence["chain"])</code></pre>
+<table>
+  <thead><tr><th>Module</th><th>Contents</th></tr></thead>
+  <tbody>
+    <tr><td><code>strata.store</code></td><td><code>Store</code>: <code>run</code>, <code>one</code>, <code>value</code>, <code>read</code>, <code>transaction()</code>, <code>apply_schema</code>, <code>stats</code></td></tr>
+    <tr><td><code>strata.queries</code></td><td><code>resolve</code>, <code>describe</code>, <code>below</code>, <code>above</code>, <code>relation</code>, <code>date_bracket</code>, <code>provenance</code>, <code>issues</code>, <code>overview</code>, <code>period_sequence</code>, <code>explain_issue</code></td></tr>
+    <tr><td><code>strata.edits</code></td><td><code>propose_relation</code>, <code>resolve_order</code>, <code>assign_phase</code>, <code>add_note</code>, <code>history</code>, <code>revert</code>, <code>Rejected</code></td></tr>
+    <tr><td><code>strata.checks</code></td><td><code>run_checks</code>, <code>compute_depth</code>, <code>mark_redundant</code>, <code>contest</code></td></tr>
+    <tr><td><code>strata.importers</code></td><td>Open Context fetch and normalise, CSV and Harris-matrix loaders, <code>import_site</code></td></tr>
+    <tr><td><code>strata.web_export</code></td><td><code>export_web</code>, <code>export_bundle</code></td></tr>
+    <tr><td><code>strata.desktop</code></td><td><code>resolve_store</code>, the extension's entry point</td></tr>
+  </tbody>
+</table>
+</section>
+
+<section id="dev">
+<h2>Development and deployment</h2>
+<pre><code>uv run pytest                                                              # Python: import, checks, queries, edits, desktop store
+docker run --rm -v "$PWD":/app -w /app node:22-slim node tests/web_smoke.mjs  # every viewer query, in Relate WASM under Node
+python3 -m http.server -d web 8000                                         # the viewer at http://localhost:8000</code></pre>
+<table>
+  <thead><tr><th>Path</th><th>What</th></tr></thead>
+  <tbody>
+    <tr><td><code>strata/</code></td><td>The package: store, schema, importers, checks, queries, edits, MCP server, CLI, exports, desktop entry.</td></tr>
+    <tr><td><code>data/strata.rl</code>, <code>data/sources/</code></td><td>The store and the normalised sources it is built from.</td></tr>
+    <tr><td><code>web/</code></td><td>The viewer: <code>app.js</code>, <code>worker.js</code> (Relate in a worker), <code>loader.js</code>, <code>queries.js</code>, <code>matrix.js</code> (layout), <code>webmcp.js</code>, <code>docs/</code> (this page), <code>vendor/relate-wasm/</code> (unmodified 1.2.0), <code>data/</code>.</td></tr>
+    <tr><td><code>desktop/</code></td><td>Manifest template, icon, build script and release notes for the extension.</td></tr>
+    <tr><td><code>.github/workflows/</code></td><td><code>pages.yml</code> publishes <code>web/</code>; <code>desktop.yml</code> builds <code>strata.mcpb</code> on version tags.</td></tr>
+  </tbody>
+</table>
+<p><b>Cache safety.</b> Scripts and styles are referenced with <code>?v=dev</code>, which the Pages workflow replaces with the commit hash, so a browser never mixes two deploys. Data parts are versioned by their build time. New imports in <code>web/</code> must keep the suffix.</p>
+</section>
+
+<section id="limits">
+<h2>Limits and known issues</h2>
+<ul>
+  <li><b>The browser loads a copy.</b> Relate's WASM build runs in memory and cannot open <code>.rl</code> files, so the viewer loads a JSON export, which takes a few seconds. Changes made in the page are not saved.</li>
+  <li><b>Rebuilds start from the published record.</b> <code>strata build</code> recreates <code>data/strata.rl</code> from the sources; edits in it are lost. Work in a copy (the desktop extension does).</li>
+  <li><b>Relate 1.2 query shapes.</b> Strata avoids a few patterns that are slow or unsupported in this version: <code>shortestPath</code> with a filter on its relationships hangs when no path exists (hence <code>:CONTESTED</code> as its own type); <code>shortestPath</code> with a minimum length; nested pattern comprehensions; and, in the WASM build, <code>COUNT { … }</code> over a variable-length path.</li>
+  <li><b>Dates are field phasing.</b> Kenan Tepe's periods are tentative. A period inversion is a question for a specialist, not an error in itself.</li>
+  <li><b>WebMCP is new.</b> The API is a draft and changes between browser versions. The viewer supports both current spellings.</li>
+</ul>
+</section>
+
+<section id="licences">
+<h2>Data, licences, credits</h2>
+<ul>
+  <li><b>Code:</b> Apache-2.0.</li>
+  <li><b>Kenan Tepe data:</b> Bradley Parker and Peter Cobb (eds.), <em>Kenan Tepe</em>, Open Context, 2012, <a href="https://doi.org/10.6078/M7H41PBJ">doi:10.6078/M7H41PBJ</a>, <a href="https://creativecommons.org/licenses/by/4.0/">CC BY 4.0</a>. Records were reduced to the fields Strata uses and their stratigraphic statements merged into graph relationships; each keeps the record that stated it and its URI. See <a href="https://github.com/openhistorymap/strata/blob/main/NOTICE">NOTICE</a>.</li>
+  <li><b>Taxa:</b> linked to <a href="https://www.gbif.org/">GBIF</a>.</li>
+  <li><b>Relate</b> (Python wheel, CLI and WASM build, Apache-2.0): <a href="https://github.com/relatedb/relate">relatedb/relate</a>.</li>
+  <li><b>Harris-matrix readers:</b> <a href="https://github.com/openhistorymap/harris-mcp">harris-mcp</a>, part of <a href="https://www.openhistorymap.org/">Open History Map</a>.</li>
+</ul>
+<p class="muted">Strata was built for the Relate by Neo4j hackathon. Source, issues and releases: <a href="https://github.com/openhistorymap/strata">github.com/openhistorymap/strata</a>.</p>
+</section>
+
+</main>
+</div>
+<script type="module" src="docs.js?v=dev"></script>
+</body>
+</html>

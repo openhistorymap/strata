@@ -8,6 +8,8 @@
 - 14,576 recorded relations between them
 - 19,742 finds
 
+**Documentation: [openhistorymap.org/strata/docs](https://www.openhistorymap.org/strata/docs/).** Try it in the browser: [openhistorymap.org/strata](https://www.openhistorymap.org/strata/).
+
 Strata turns that record into a Harris matrix you can query. An archaeologist or an AI agent can ask it questions in Cypher, from the command line, or over MCP. Edits are proposed in a transaction and refused, with the evidence, when they contradict the record.
 
 ## Use case

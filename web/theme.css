@@ -1,0 +1,76 @@
+/* Strata colours and type, shared by the viewer and the docs. Dark applies when
+   <html data-theme="dark"> (set by the page from the saved choice or the system). */
+
+:root {
+  color-scheme: light;
+  --paper: #f5f0e6;
+  --paper-2: #ece5d6;
+  --card: #fbf8f2;
+  --field: #fffdf9;
+  --ink: #2a251f;
+  --ink-2: #5c544a;
+  --ink-3: #8a8073;
+  --rule: #d9cfbd;
+  --grid: #e7dfcf;
+  --accent: #8b4a1f;
+  --error: #a3261b;
+  --warning: #a86a00;
+  --info: #4d6a85;
+  --ok: #3f6f3b;
+  --live: #4f8a4b;
+  --focus: #1f5f8b;
+  --error-bg: #f8e9e4;
+  --warning-bg: #f7eedb;
+  --info-bg: #e7edf2;
+  --local: #b4560f;
+  --local-bg: #fbe9d7;
+  --node-stroke: #9c907e;
+  --edge: #8f8474;
+  --edge-implied: #c8bca8;
+  --edge-rejected: #b9aea0;
+  --later: #1f5f8b;
+  --earlier: #8b4a1f;
+  --band-opacity: .16;
+  --invert-ink: var(--paper);
+  --invert-n: #d8cfc0;
+  --invert-flag: #ffb4a8;
+  --serif: "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, serif;
+  --sans: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+}
+
+/* Dark: the same excavation-notebook palette, after sunset. */
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --paper: #1b1916;
+  --paper-2: #2a2622;
+  --card: #221f1b;
+  --field: #191714;
+  --ink: #ece4d6;
+  --ink-2: #b9ae9d;
+  --ink-3: #8a8073;
+  --rule: #3d3730;
+  --grid: #2f2a25;
+  --accent: #e0995e;
+  --error: #f0806f;
+  --warning: #e5b154;
+  --info: #8fb1d1;
+  --ok: #8cc584;
+  --live: #7cc074;
+  --focus: #7fb4e0;
+  --error-bg: #3a2420;
+  --warning-bg: #3a2f1c;
+  --info-bg: #222d36;
+  --local: #f0a35e;
+  --local-bg: #3b2a1a;
+  --node-stroke: #6d6458;
+  --edge: #8d8274;
+  --edge-implied: #4d463d;
+  --edge-rejected: #5a5248;
+  --later: #7fb4e0;
+  --earlier: #e0995e;
+  --band-opacity: .30;
+  --invert-ink: #1b1916;
+  --invert-n: #4d463d;
+  --invert-flag: #a3261b;
+}
