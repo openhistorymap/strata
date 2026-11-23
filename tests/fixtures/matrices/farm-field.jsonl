@@ -1,0 +1,8 @@
+{"identifier": "A", "category": "Trench", "shortDescription": "Area A", "relations": {}}
+{"identifier": "1", "category": "Layer", "shortDescription": "topsoil", "relations": {"isAbove": ["2", "4"], "isRecordedIn": "A"}}
+{"identifier": "2", "category": "Layer", "shortDescription": "wall", "relations": {"isBelow": ["1"], "abuts": ["5"], "isAbove": ["7"], "isRecordedIn": "A"}}
+{"identifier": "3", "category": "Layer", "shortDescription": "pit cut", "relations": {"isFilledBy": ["4"], "cuts": ["5"], "isRecordedIn": "A"}}
+{"identifier": "4", "category": "Layer", "shortDescription": "pit fill", "relations": {"fills": ["3"], "isBelow": ["1"], "isRecordedIn": "A"}}
+{"identifier": "5", "category": "Layer", "shortDescription": "floor, north of the wall", "relations": {"isCutBy": ["3"], "isAbuttedBy": ["2"], "isSameAs": ["6"], "isAbove": ["7"], "borders": ["6"]}}
+{"identifier": "6", "category": "Layer", "shortDescription": "floor, south of the wall", "relations": {"isSameAs": ["5"], "isAbove": ["7"]}}
+{"identifier": "7", "category": "Layer", "shortDescription": "natural", "relations": {"isBelow": ["5", "6", "2"]}}

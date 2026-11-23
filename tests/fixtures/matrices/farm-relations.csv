@@ -1,0 +1,10 @@
+us;rapporto;us2;area;descrizione
+1;Copre;2;Area A;topsoil
+1;Copre;4;Area A;topsoil
+4;Riempie;3;Area A;pit fill
+3;Taglia;5;Area A;pit cut
+2;Si appoggia a;5;Area A;wall
+5;Uguale a;6;;floor, north of the wall
+5;Copre;7;;
+7;Coperto da;6;;natural
+2;Copre;7;Area A;

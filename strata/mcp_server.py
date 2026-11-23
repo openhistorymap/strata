@@ -38,6 +38,9 @@ Context.depth is the unit's row in the Harris matrix (0 = top/latest).
 Name units by full path, e.g. "Area D/Trench 6/Locus 20".
 store_info says which .rl file you are reading and writing; say so when the user asks
 where their data or edits are.
+import_matrix brings in an existing Harris matrix (ArchEd/Stratify .lst, pyArchInit,
+Field Desktop, Harris Matrix Composer, DOT, GraphML, CSV, XLSX...; see matrix_formats)
+as a new site and checks it; report what it read and the issues it found.
 
 Rules:
 - Answer from the graph. Cite unit paths and, for claims, the records that state them.
@@ -221,6 +224,31 @@ async def add_note(unit: str, note: str, author: str = "agent", site: Optional[s
 async def revert(edit_id: str, note: str = "", author: str = "agent") -> dict:
     """Undo an edit from history(); the reversal is itself logged."""
     return await _on_db(E.revert, edit_id, author=author, note=note or None)
+
+
+@mcp.tool
+async def matrix_formats() -> list[dict]:
+    """The Harris-matrix file formats import_matrix reads."""
+    from .importers.matrices import formats
+    return [{"format": f.name, "reads": f.label, "extensions": list(f.extensions)} for f in formats()]
+
+
+@mcp.tool
+async def import_matrix(path: str, site: Optional[str] = None, name: Optional[str] = None,
+                        format: str = "auto", reverse: bool = False, replace: bool = False) -> dict:
+    """Convert an existing Harris matrix file (absolute path on this computer) into a new site
+    in the store, then run every check on it. `site` defaults to the file name; `format` is
+    detected (see matrix_formats). `reverse`: DOT/GraphML arrows run from earlier to later.
+    `replace` overwrites a site with the same id and drops its edit history: ask the user first."""
+    from .convert import SiteExists, import_matrix as run_import
+
+    def go(store: Store) -> dict:
+        store.apply_schema()
+        try:
+            return run_import(store, path, site=site, name=name, fmt=format, reverse=reverse, replace=replace)
+        except (SiteExists, ValueError, FileNotFoundError, RuntimeError) as e:
+            return {"error": str(e)}
+    return await _on_db(go)
 
 
 @mcp.tool

@@ -10,7 +10,7 @@
 
 **Documentation: [openhistorymap.org/strata/docs](https://www.openhistorymap.org/strata/docs/).** Try it in the browser: [openhistorymap.org/strata](https://www.openhistorymap.org/strata/).
 
-Strata turns that record into a Harris matrix you can query. An archaeologist or an AI agent can ask it questions in Cypher, from the command line, or over MCP. Edits are proposed in a transaction and refused, with the evidence, when they contradict the record.
+Strata turns that record into a Harris matrix you can query, and does the same for **any excavation's matrix** kept in ArchEd, Stratify, pyArchInit, Field Desktop, Harris Matrix Composer, a Graphviz/yEd drawing or a spreadsheet (see [Your own matrices](#your-own-matrices)). An archaeologist or an AI agent can ask it questions in Cypher, from the command line, or over MCP. Edits are proposed in a transaction and refused, with the evidence, when they contradict the record.
 
 ## Use case
 
@@ -134,11 +134,10 @@ relate serve --database data/strata.rl --mcp stdio      # Relate's own MCP surfa
 - **From a URL:** any Strata export served with CORS (GitHub raw, Zenodo, your own server). The page link becomes `?data=<url>`, so you can share it.
 - **From your computer:** drop a `.strata.json` file on the page, or pick one. It is read in the tab and nothing is uploaded. The chip turns orange and says **Local file** with the file's name, size and date for as long as it is loaded.
 
-Make that file from any excavation Strata can import:
+Make that file from any Harris matrix Strata can read (next section):
 
 ```bash
-uv run strata --db my-dig.rl import-matrix my.hmcx --site my-dig --name "My dig"
-uv run strata --db my-dig.rl export-web --site my-dig --bundle my-dig.strata.json
+uv run strata convert my-dig.lst            # -> my-dig.strata.json, checked
 ```
 
 Units recorded without a trench (most Harris-matrix files) are drawn as one matrix, "Units without a trench".
@@ -217,9 +216,30 @@ Then ask, for example:
 ```bash
 uv run strata build                 # data/sources/* -> data/strata.rl, then every check (~20 s)
 uv run strata fetch kenan-tepe      # re-download from Open Context and re-normalise (~5 min)
-uv run strata import-matrix my.hmcx --site my-dig --name "My dig"   # any format harris-mcp reads
+uv run strata import-matrix my.hmcx --site my-dig --name "My dig"   # any format in `strata formats`
 uv run pytest
 ```
+
+## Your own matrices
+
+`strata convert` reads a Harris matrix from the program it was kept in, loads it into a fresh Relate store, runs every check, and writes a `.strata.json` bundle the viewer opens from your disk. `import-matrix` adds it to a store as a site instead, and in Claude Desktop or Claude Code the `import_matrix` tool does the same ("Import ~/Desktop/scavo.sqlite").
+
+```bash
+uv run strata convert scavo.sqlite                       # pyArchInit database -> scavo.strata.json
+uv run strata convert matrix.lst --store matrix.rl       # also keep the Relate file
+uv run strata formats
+```
+
+| Format | Read from |
+|---|---|
+| `lst` | ArchEd, BASP Harris, Stratify `.lst` lists (basic and extended form) |
+| `pyarchinit` | pyArchInit's SQLite database, or a CSV of its `us_table` (`rapporti` in Italian, English or German) |
+| `field` | Field Desktop (iDAI.field) CSV export, a folder of them, or JSON Lines |
+| `dot`, `graphml` | Graphviz, yEd, Gephi, igraph drawings: arrows from the later unit to the earlier (`--reverse` otherwise), edge labels name the relation |
+| `edges` | any table with one statement per row: `from, relation, to`, in any of the supported languages |
+| `hmcx`, `hmc`, `datapackage`, `csv`, `xlsx`, `hmdp` | Harris Matrix Composer, T. S. Dye's hm packages, paired CSVs, Excel, HMDP, via [harris-mcp](https://github.com/openhistorymap/harris-mcp) |
+
+The format is recognised from the content. Relation words are mapped from English, Italian, German, French and Spanish ("Copre", "Tagliato da", "Wird geschnitten", `isCutBy`…). A word Strata doesn't know is never guessed: it is left out and counted in `skipped_relation_words`. Tested on the stratigraphr LST samples, pyArchInit's sample database, Ulm-Eggingen and Harris's figure 12, and on one invented dig written in every format (`tests/fixtures/matrices/`), which every reader must turn into the same graph. Details: [docs](https://www.openhistorymap.org/strata/docs/#import).
 
 ## Where the data lives
 

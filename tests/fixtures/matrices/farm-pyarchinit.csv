@@ -1,0 +1,8 @@
+id_us,sito,area,us,unita_tipo,d_stratigrafica,d_interpretativa,periodo_iniziale,fase_iniziale,rapporti
+1,Fattoria,1,1,US,strato,Humus,3,1,"[['Copre', '2', '1', 'Fattoria'], ['Copre', '4', '1', 'Fattoria']]"
+2,Fattoria,1,2,USM,muro,Muro di cinta,2,1,"[['Coperto da', '1', '1', 'Fattoria'], ['Si appoggia a', '5', '2', 'Fattoria'], ['Copre', '7', '2', 'Fattoria']]"
+3,Fattoria,1,3,US,taglio,Taglio di fossa,2,2,"[['Riempito da', '4'], ['Taglia', '5', '2', 'Fattoria']]"
+4,Fattoria,1,4,US,riempimento,Riempimento di fossa,2,2,"[['Riempie', '3'], ['Coperto da', '1']]"
+5,Fattoria,2,5,US,piano,Piano pavimentale nord,2,1,"[['Tagliato da', '3', '1', 'Fattoria'], ['Gli si appoggia', '2', '1', 'Fattoria'], ['Uguale a', '6'], ['Copre', '7']]"
+6,Fattoria,2,6,US,piano,Piano pavimentale sud,2,1,"[['Uguale a', '5'], ['Copre', '7']]"
+7,Fattoria,2,7,US,naturale,Sterile,1,1,"[['Coperto da', '5'], ['Coperto da', '6'], ['Coperto da', '2', '1', 'Fattoria']]"

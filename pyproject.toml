@@ -1,6 +1,6 @@
 [project]
 name = "strata"
-version = "0.2.0"
+version = "0.3.0"
 description = "An archaeological excavation as one Relate graph file: stratigraphy, finds, periods and places, connected."
 readme = "README.md"
 license = "Apache-2.0"

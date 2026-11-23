@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<graphml xmlns="http://graphml.graphdrawing.org/xmlns" xmlns:y="http://www.yworks.com/xml/graphml">
+  <key for="node" id="d0" yfiles.type="nodegraphics"/>
+  <key for="edge" id="d1" yfiles.type="edgegraphics"/>
+  <key for="node" id="d2" attr.name="description" attr.type="string"/>
+  <graph id="G" edgedefault="directed">
+    <node id="area">
+      <data key="d0"><y:ProxyAutoBoundsNode><y:Realizers active="0"><y:GroupNode><y:NodeLabel>Area A</y:NodeLabel></y:GroupNode></y:Realizers></y:ProxyAutoBoundsNode></data>
+      <graph id="area:" edgedefault="directed">
+        <node id="1"><data key="d0"><y:ShapeNode><y:NodeLabel>1</y:NodeLabel></y:ShapeNode></data><data key="d2">topsoil</data></node>
+        <node id="2"><data key="d0"><y:ShapeNode><y:NodeLabel>2</y:NodeLabel></y:ShapeNode></data><data key="d2">wall</data></node>
+        <node id="3"><data key="d0"><y:ShapeNode><y:NodeLabel>3</y:NodeLabel></y:ShapeNode></data><data key="d2">pit cut</data></node>
+        <node id="4"><data key="d0"><y:ShapeNode><y:NodeLabel>4</y:NodeLabel></y:ShapeNode></data><data key="d2">pit fill</data></node>
+      </graph>
+    </node>
+    <node id="5"><data key="d0"><y:ShapeNode><y:NodeLabel>5</y:NodeLabel></y:ShapeNode></data><data key="d2">floor, north of the wall</data></node>
+    <node id="6"><data key="d0"><y:ShapeNode><y:NodeLabel>6</y:NodeLabel></y:ShapeNode></data><data key="d2">floor, south of the wall</data></node>
+    <node id="7"><data key="d0"><y:ShapeNode><y:NodeLabel>7</y:NodeLabel></y:ShapeNode></data><data key="d2">natural</data></node>
+    <edge source="1" target="2"/>
+    <edge source="1" target="4"/>
+    <edge source="4" target="3"><data key="d1"><y:PolyLineEdge><y:EdgeLabel>fills</y:EdgeLabel></y:PolyLineEdge></data></edge>
+    <edge source="3" target="5"><data key="d1"><y:PolyLineEdge><y:EdgeLabel>cuts</y:EdgeLabel></y:PolyLineEdge></data></edge>
+    <edge source="2" target="5"><data key="d1"><y:PolyLineEdge><y:EdgeLabel>abuts</y:EdgeLabel></y:PolyLineEdge></data></edge>
+    <edge source="5" target="6"><data key="d1"><y:PolyLineEdge><y:EdgeLabel>same as</y:EdgeLabel></y:PolyLineEdge></data></edge>
+    <edge source="5" target="7"/>
+    <edge source="6" target="7"/>
+    <edge source="2" target="7"/>
+  </graph>
+</graphml>

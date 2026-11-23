@@ -39,3 +39,8 @@ def test_every_cli_command_and_question_is_documented():
 
 def test_every_issue_kind_is_documented():
     assert not [k for k in SEVERITY if f"<code>{k}</code>" not in DOCS]
+
+
+def test_every_matrix_format_is_documented():
+    from strata.importers.matrices import formats
+    assert not [f.name for f in formats() if f"<code>{f.name}</code>" not in DOCS]

@@ -132,9 +132,9 @@ ORDER BY n DESC</textarea>
     <span>It is read in this tab. Nothing is uploaded.</span>
   </div>
   <input type="file" id="open-file" accept=".json,application/json" hidden>
-  <p class="hint">Make one from any excavation Strata can import:<br>
-    <code>uv run strata --db my-dig.rl import-matrix my.hmcx --site my-dig</code><br>
-    <code>uv run strata --db my-dig.rl export-web --site my-dig --bundle my-dig.strata.json</code></p>
+  <p class="hint">Have a Harris matrix in ArchEd, Stratify, pyArchInit, Field Desktop, Harris Matrix Composer, DOT, GraphML or a spreadsheet? Convert it, checked:<br>
+    <code>uv run strata convert my-matrix.lst</code> → <code>my-matrix.strata.json</code>
+    (<a href="docs/#import">formats</a>)</p>
 </dialog>
 
 <div class="agent-toast" id="agent-toast" role="status" aria-live="polite" hidden></div>

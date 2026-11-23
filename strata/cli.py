@@ -8,6 +8,8 @@
     strata query "MATCH (c:Context) RETURN c.type, count(*)"     read-only Cypher
     strata mcp                        serve the store to an agent over MCP (stdio)
     strata export-web                 dump the store to web/data/ for the browser viewer
+    strata convert matrix.lst         any Harris matrix -> matrix.strata.json for the viewer
+    strata formats                    the matrix formats Strata reads
 """
 
 from __future__ import annotations
@@ -74,15 +76,34 @@ def cmd_build(args) -> None:
         print(f"refreshed the viewer data in web/data/ ({', '.join(out)})", file=sys.stderr)
 
 
+def _matrix_options(args) -> dict:
+    meta = {"license": args.license, "license_label": args.license_label, "source": args.source,
+            "source_uri": args.source_uri}
+    return {"site": args.site, "name": args.name, "fmt": args.format, "reverse": args.reverse, "meta": meta}
+
+
 def cmd_import_matrix(args) -> None:
-    from .importers.harris import matrix_source
-    from .importers.load import import_site
-    site = {"id": args.site, "name": args.name or args.site, "license": args.license,
-            "license_label": args.license_label, "source": args.source, "source_uri": args.source_uri}
+    from .convert import SiteExists, import_matrix
     with Store(args.db) as store:
         store.apply_schema()
-        print(import_site(store, matrix_source(args.path, {k: v for k, v in site.items() if v}, args.format)))
-        print(run_checks(store, args.site))
+        try:
+            _print(import_matrix(store, args.path, replace=args.replace, **_matrix_options(args)))
+        except (SiteExists, ValueError, FileNotFoundError, RuntimeError) as e:
+            raise SystemExit(str(e))
+
+
+def cmd_convert(args) -> None:
+    from .convert import convert
+    try:
+        _print(convert(args.path, args.out, store_out=args.store, **_matrix_options(args)))
+    except (ValueError, FileNotFoundError, RuntimeError) as e:
+        raise SystemExit(str(e))
+
+
+def cmd_formats(args) -> None:
+    from .importers.matrices import formats
+    _print([{"format": f.name, "reads": f.label, "extensions": " ".join(f.extensions), "via": f.via}
+            for f in formats()])
 
 
 def cmd_check(args) -> None:
@@ -169,16 +190,33 @@ def main(argv: list[str] | None = None) -> None:
     s.add_argument("sites", nargs="*", help="sites to include (default: all)")
     s.set_defaults(func=cmd_build)
 
-    s = sub.add_parser("import-matrix", help="add a Harris-matrix file (hmcx, hmc, hm data package, csv, xlsx, HMDP)")
-    s.add_argument("path")
-    s.add_argument("--site", required=True, help="site id, e.g. ulm-eggingen")
-    s.add_argument("--name")
-    s.add_argument("--format", default="auto")
-    s.add_argument("--license")
-    s.add_argument("--license-label")
-    s.add_argument("--source")
-    s.add_argument("--source-uri")
+    def matrix_args(s, site_required: bool) -> None:
+        s.add_argument("path", help="the matrix file (or folder, for paired CSVs and hm data packages)")
+        s.add_argument("--site", required=site_required,
+                       help="site id, e.g. ulm-eggingen" + ("" if site_required else " (default: from the file name)"))
+        s.add_argument("--name", help="site name (default: the file name)")
+        s.add_argument("--format", default="auto", help="see 'strata formats' (default: detect)")
+        s.add_argument("--reverse", action="store_true",
+                       help="DOT/GraphML: arrows run from the earlier unit to the later one")
+        s.add_argument("--license")
+        s.add_argument("--license-label")
+        s.add_argument("--source", help="where the matrix comes from (default: the format and file name)")
+        s.add_argument("--source-uri")
+
+    s = sub.add_parser("import-matrix", help="add a Harris matrix from any supported format to the store")
+    matrix_args(s, site_required=True)
+    s.add_argument("--replace", action="store_true",
+                   help="replace a site with the same id (drops its edit history)")
     s.set_defaults(func=cmd_import_matrix)
+
+    s = sub.add_parser("convert", help="convert a Harris matrix into a viewer bundle (.strata.json), checked")
+    matrix_args(s, site_required=False)
+    s.add_argument("-o", "--out", help="bundle to write (default: <file name>.strata.json here)")
+    s.add_argument("--store", metavar="FILE.rl", help="also keep the converted Relate store")
+    s.set_defaults(func=cmd_convert)
+
+    s = sub.add_parser("formats", help="list the Harris-matrix formats Strata reads")
+    s.set_defaults(func=cmd_formats)
 
     s = sub.add_parser("check", help="recompute matrix depth, contested edges and issues")
     s.add_argument("sites", nargs="*")

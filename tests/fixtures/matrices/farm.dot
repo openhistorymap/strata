@@ -1,0 +1,19 @@
+/* farm: drawn top to bottom, each arrow from the later unit to the earlier one */
+digraph "farm" {
+  rankdir = TB;
+  node [shape=box, fontname="Helvetica"];
+  subgraph cluster_a {
+    label = "Area A";
+    "1" [tooltip="topsoil", type=layer];
+    "2" [tooltip="wall", type=structure];
+    3 [tooltip="pit cut", type=cut]; 4 [tooltip="pit fill"];
+  }
+  5 [tooltip="floor, north of the wall"]; 6 [tooltip="floor, south of the wall"];
+  7 [label="7", tooltip="natural"];  // the bottom
+  1 -> 2;  1 -> 4
+  4 -> 3 [label="fills"];
+  3 -> 5 [label=cuts, color=red];
+  2 -> 5 [label="abuts", dir=none, constraint=false];
+  5 -> 6 [label="same as", dir=none];
+  {5 6 2} -> 7;
+}

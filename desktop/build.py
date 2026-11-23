@@ -4,9 +4,11 @@
     npx -y @anthropic-ai/mcpb pack dist/strata-desktop dist/strata.mcpb
 
 The bundle is a uv-type server: Claude Desktop installs the dependencies listed
-in its own small pyproject.toml (relate-db and fastmcp only; the importers and
-their git dependency stay out) and runs server.py. It carries the store as a
-read-only seed; see strata/desktop.py for where edits go.
+in its own small pyproject.toml and runs server.py. It carries the store as a
+read-only seed; see strata/desktop.py for where edits go. The matrix importers
+come along, with harris-mcp's format readers copied in (Apache-2.0, same
+authors) so that no git checkout is needed on the user's machine; the Open
+Context fetcher stays out.
 
 The manifest's version comes from pyproject.toml, and its tool list from the
 MCP server itself, so neither can drift from the code.
@@ -24,9 +26,15 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 OUT = ROOT / "dist" / "strata-desktop"
 
-# The modules the MCP server needs; the importers (and harris-mcp, httpx) are not shipped.
+# The modules the MCP server needs (paths under strata/); the Open Context fetcher is not shipped.
 MODULES = ["__init__.py", "store.py", "schema.cypher", "queries.py", "checks.py", "edits.py",
-           "mcp_server.py", "desktop.py"]
+           "mcp_server.py", "desktop.py", "convert.py", "web_export.py",
+           "importers/__init__.py", "importers/load.py", "importers/matrices.py", "importers/verbs.py",
+           "importers/harris.py", "importers/formats/*.py"]
+# harris-mcp's format readers and what they import (not its server)
+HARRIS = ["__init__.py", "model.py", "registry.py", "formats/*.py"]
+# dependencies of the bundled code, beyond relate-db and fastmcp (pydantic comes with fastmcp)
+EXTRA_DEPS = ["networkx>=3.0", "openpyxl>=3.1"]
 
 SERVER_PY = '''"""Entry point Claude Desktop runs: uv run --directory <this folder> server.py"""
 from strata.desktop import main
@@ -44,6 +52,16 @@ async def tool_list() -> list[dict]:
     return [{"name": t.name, "description": " ".join((t.description or "").split())} for t in tools]
 
 
+def _copy(src: Path, dst: Path, patterns: list[str]) -> None:
+    for pattern in patterns:
+        files = sorted(src.glob(pattern))
+        if not files:
+            raise SystemExit(f"nothing matches {src / pattern}")
+        for f in files:
+            (dst / f.relative_to(src)).parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(f, dst / f.relative_to(src))
+
+
 def build() -> Path:
     project = tomllib.loads((ROOT / "pyproject.toml").read_text())["project"]
     deps = [d for d in project["dependencies"] if d.split()[0].split(">")[0].split("<")[0].split("=")[0]
@@ -53,10 +71,11 @@ def build() -> Path:
 
     if OUT.exists():
         shutil.rmtree(OUT)
-    (OUT / "strata").mkdir(parents=True)
-    (OUT / "data").mkdir()
-    for name in MODULES:
-        shutil.copy2(ROOT / "strata" / name, OUT / "strata" / name)
+    (OUT / "data").mkdir(parents=True)
+    _copy(ROOT / "strata", OUT / "strata", MODULES)
+    import harris_mcp
+    _copy(Path(harris_mcp.__file__).parent, OUT / "harris_mcp", HARRIS)
+    deps += EXTRA_DEPS
     shutil.copy2(ROOT / "data" / "strata.rl", OUT / "data" / "strata.rl")
     for name in ["LICENSE", "NOTICE"]:
         shutil.copy2(ROOT / name, OUT / name)

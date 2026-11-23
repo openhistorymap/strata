@@ -38,7 +38,8 @@
     <li><a href="#what">What Strata is</a></li>
     <li><a href="#start">Getting started</a></li>
     <li><a href="#data">The data: Kenan Tepe</a></li>
-    <li><a href="#model">The graph model</a></li>
+    <li><a href="#import">Your own matrices</a></li>
+<li><a href="#model">The graph model</a></li>
     <li><a href="#relate">How Strata uses Relate</a></li>
     <li><a href="#reasoning">Stratigraphic reasoning</a></li>
     <li><a href="#issues">Issue kinds</a></li>
@@ -69,13 +70,14 @@
   <li><b>19,742</b> finds, with animal bones linked to GBIF taxa</li>
   <li><b>268</b> open issues where the records disagree</li>
 </ul>
+<p>Any other excavation's Harris matrix, kept in ArchEd, Stratify, pyArchInit, Field Desktop, Harris Matrix Composer, a drawing or a spreadsheet, converts into the same kind of graph and gets the same checks (<a href="#import">Your own matrices</a>).</p>
 <p>The same graph can be used in five ways:</p>
 <table>
   <thead><tr><th>Where</th><th>What you get</th><th>Section</th></tr></thead>
   <tbody>
     <tr><td>Browser</td><td>The viewer: Harris matrix per trench, unit records, issues, a Cypher console. Relate runs in the tab.</td><td><a href="#viewer">Viewer</a></td></tr>
     <tr><td>Browser agent</td><td>Nine WebMCP tools an AI agent in the browser can call.</td><td><a href="#webmcp">WebMCP</a></td></tr>
-    <tr><td>Claude Desktop</td><td>A one-click extension with 19 tools, including checked edits.</td><td><a href="#desktop">Desktop</a></td></tr>
+    <tr><td>Claude Desktop</td><td>A one-click extension with 21 tools, including checked edits and importing your own matrices.</td><td><a href="#desktop">Desktop</a></td></tr>
     <tr><td>Claude Code, other MCP hosts</td><td>The same MCP server over stdio.</td><td><a href="#code">Claude Code</a></td></tr>
     <tr><td>Terminal, Python</td><td>The <code>strata</code> command and the <code>strata</code> package.</td><td><a href="#cli">CLI</a>, <a href="#python">Python</a></td></tr>
   </tbody>
@@ -121,6 +123,44 @@ uv run strata query "MATCH (i:Issue) RETURN i.kind, count(*) ORDER BY count(*) D
     <tr><td>Open issues</td><td class="n">268</td></tr>
   </tbody>
 </table>
+</section>
+
+<section id="import">
+<h2>Your own matrices</h2>
+<p>Strata reads a Harris matrix from the program it was kept in, turns every recorded relation into the graph above, and runs every check on it: matrix rows, loops, records that contradict each other, redundant relations. Nothing in the file is changed; what the file said stays on each edge (<code>verbs</code>, <code>stated_by</code>, <code>sources</code>).</p>
+<pre><code>uv run strata convert scavo.sqlite                  # → scavo.strata.json, checked; open it in the viewer
+uv run strata convert matrix.lst -o my-dig.strata.json --store my-dig.rl   # also keep a Relate file
+uv run strata --db mine.rl import-matrix matrix.lst --site my-dig          # add it to a store as a site
+uv run strata formats                               # what can be read</code></pre>
+<p>The format is recognised from the file's content, so a CSV from pyArchInit, Field Desktop or a spreadsheet each go to the right reader; <code>--format</code> overrides it. In Claude Desktop or Claude Code, ask <em>"Import the matrix in ~/Desktop/scavo.sqlite"</em>: the <code>import_matrix</code> tool does the same and reports what it read and found.</p>
+<h3>Formats</h3>
+<table>
+  <thead><tr><th>Format</th><th>Files</th><th>How it is read</th></tr></thead>
+  <tbody>
+    <tr><td><code>lst</code></td><td>ArchEd, BASP Harris (Bonn), Stratify: <code>.lst</code></td><td>A line in column 0 starts a unit; indented <code>above:</code>, <code>below:</code>, <code>contemporary with:</code>, <code>equal to:</code>, <code>part of:</code> lines list other units, comma-separated. <code>above: X</code> under unit U means X lies above U. Stratify's extended form adds <code>Unit class</code> (groups and work areas become the units' group), <code>Unit type</code>, <code>Phase</code>, <code>Description</code>, <code>First year</code>/<code>Last year</code>; <code>SITE::unit</code> names keep their site as the group. BASP's <code>+</code>/<code>-</code> markers are dropped. UTF-8 or Windows-1252.</td></tr>
+    <tr><td><code>pyarchinit</code></td><td>pyArchInit's SQLite database, or a CSV of its <code>us_table</code></td><td>One unit per row (<code>sito</code>, <code>area</code>, <code>us</code>, <code>unita_tipo</code>, descriptions, <code>periodo_iniziale</code>, <code>fase_iniziale</code>); relations from <code>rapporti</code>, entries <code>[relation, us, area, site]</code> in Italian, English or German as pyArchInit's form offers them. A unit is its US number, prefixed with its area when there are several (<code>2/105</code>). Period <em>n</em> becomes "Periodo <em>n</em>", phase "<em>period</em>-<em>phase</em>".</td></tr>
+    <tr><td><code>field</code></td><td>Field Desktop (iDAI.field): CSV export (one file per category, or a folder of them) or JSON Lines</td><td><code>identifier</code>, <code>shortDescription</code>, <code>period.value</code>, <code>dating.0.*</code> years, and <code>relations.isAbove</code>, <code>isBelow</code>, <code>cuts</code>, <code>isCutBy</code>, <code>fills</code>, <code>isFilledBy</code>, <code>isAfter</code>, <code>isBefore</code>, <code>abuts</code>, <code>isAbuttedBy</code>, <code>isContemporaryWith</code>, <code>bondsWith</code>, <code>isSameAs</code> (targets separated by <code>;</code>). <code>isRecordedIn</code> / <code>liesWithin</code> / <code>isChildOf</code> give the group; trenches and other records with no stratigraphic relation are left out; <code>borders</code> is skipped.</td></tr>
+    <tr><td><code>dot</code></td><td>Graphviz: <code>.dot</code>, <code>.gv</code></td><td>Each arrow points from the later unit down to the earlier one, as a matrix is drawn (<code>--reverse</code> for drawings that point the other way). An edge <code>label</code> such as <code>cuts</code> or <code>same as</code> says which relation; an undirected edge without one is "contemporary". Cluster subgraphs become groups; node <code>label</code>, <code>tooltip</code>, <code>type</code>, <code>period</code>, <code>phase</code> are kept.</td></tr>
+    <tr><td><code>graphml</code></td><td>yEd, Gephi, igraph, networkx, Cytoscape: <code>.graphml</code></td><td>Same direction as DOT. Node and edge labels (yEd's too), data keys named <code>type</code>, <code>period</code>, <code>phase</code>, <code>description</code>; yEd group nodes become groups.</td></tr>
+    <tr><td><code>edges</code></td><td>Any table, one row per statement: CSV, TSV or <code>;</code>-separated</td><td>Columns found by name (<code>from</code>/<code>us</code>/<code>unit</code>, <code>relation</code>/<code>rapporto</code>, <code>to</code>/<code>us2</code>, optional <code>area</code>, <code>period</code>, <code>phase</code>, <code>description</code>), or three unnamed columns whose middle one holds relations: <code>12;Taglia;13</code>.</td></tr>
+    <tr><td><code>hmcx</code>, <code>hmc</code></td><td>Harris Matrix Composer project and XML</td><td rowspan="5">Read with <a href="https://github.com/openhistorymap/harris-mcp">harris-mcp</a>: Harris Matrix Composer (also its <code>HEADER;</code> CSV export), T. S. Dye's hm data packages (folder, <code>.ini</code>, <code>.zip</code>, <code>datapackage.json</code>), <code>contexts.csv</code> + <code>relations.csv</code> in a folder, an <code>above,below</code> edge list, Excel, and HMDP JSON.</td></tr>
+    <tr><td><code>datapackage</code></td><td>hm data package</td></tr>
+    <tr><td><code>csv</code></td><td>paired CSVs, HMC CSV export</td></tr>
+    <tr><td><code>xlsx</code></td><td>Excel workbook</td></tr>
+    <tr><td><code>hmdp</code></td><td>HMDP JSON</td></tr>
+  </tbody>
+</table>
+<h3>Relation words</h3>
+<p>Each program words relations its own way ("Copre", "Coperto da", "Tagliato da", "Si appoggia a", "Covered by", "Wird geschnitten", "recouvert par", <code>isCutBy</code>…). Strata maps them, in English, Italian, German, French and Spanish, onto its verbs: above, below, cuts, cut by, fills, filled by, seals, sealed by, same as, contemporary, abuts, within. A word it does not know is <b>not guessed</b>: the relation is left out and counted under <code>skipped_relation_words</code> in the result, so you can see what was not imported. pyArchInit's Extended Matrix connectors (<code>&gt;</code>, <code>&lt;</code>, <code>&gt;&gt;</code>, <code>&lt;&lt;</code>) are reported this way.</p>
+<h3>What you get</h3>
+<p>A site whose units carry the file's names, with their group (area, trench, cluster, Stratify group) as the trench the viewer draws them in, phases and periods where the file has them, and the result of every check. <code>convert</code> prints what it read, what it loaded and what the checks found, and writes a <code>.strata.json</code> bundle that <a href="../">the viewer</a> opens from your disk (nothing is uploaded) or from a URL.</p>
+<h3>Tested on</h3>
+<ul>
+  <li>The BASP and Stratify samples shipped with <a href="https://github.com/joeroe/stratigraphr">stratigraphr</a> (<code>bonn.lst</code>, <code>stratify.lst</code>): 17 units each, 4 matrix rows, no contradictions.</li>
+  <li>pyArchInit's sample database: 51 units, 162 relations, 20 rows, no contradictions, 25 relations already implied by others; 25 Extended Matrix connectors reported as skipped.</li>
+  <li>Ulm-Eggingen (Harris Matrix Composer project and CSV export, 110 units) and Harris's figure 12 (hm data package), from harris-mcp's tests.</li>
+  <li>One invented dig recorded in every format above (<code>tests/fixtures/matrices/</code>): each reader must give the same graph.</li>
+</ul>
 </section>
 
 <section id="model">
@@ -271,7 +311,7 @@ uv run strata query "MATCH (i:Issue) RETURN i.kind, count(*) ORDER BY count(*) D
 
 <section id="mcp">
 <h2>MCP server and tools</h2>
-<p><code>strata mcp</code> serves the store over MCP (stdio) with 19 tools. These are what the Claude Desktop extension and Claude Code use. The server's instructions tell agents to answer from the graph, cite unit paths and the records behind each claim, never invent a relation, and ask before settling a dispute.</p>
+<p><code>strata mcp</code> serves the store over MCP (stdio) with 21 tools. These are what the Claude Desktop extension and Claude Code use. The server's instructions tell agents to answer from the graph, cite unit paths and the records behind each claim, never invent a relation, and ask before settling a dispute.</p>
 <h3>Reading</h3>
 <table>
   <thead><tr><th>Tool</th><th>Returns</th></tr></thead>
@@ -300,6 +340,8 @@ uv run strata query "MATCH (i:Issue) RETURN i.kind, count(*) ORDER BY count(*) D
     <tr><td><code>add_note</code></td><td>Attaches an interpretive note to a unit.</td></tr>
     <tr><td><code>revert</code></td><td>Undoes an edit; the reversal is logged too.</td></tr>
     <tr><td><code>recheck</code></td><td>Recomputes matrix depth, contested claims and issues for a site.</td></tr>
+    <tr><td><code>import_matrix</code></td><td>Converts a Harris-matrix file on this computer into a new site and checks it (<a href="#import">formats</a>). Refuses to overwrite an existing site unless <code>replace</code> is set, which drops that site's edits.</td></tr>
+    <tr><td><code>matrix_formats</code></td><td>The formats <code>import_matrix</code> reads.</td></tr>
   </tbody>
 </table>
 <p>Try asking:</p>
@@ -327,7 +369,7 @@ uv run strata query "MATCH (i:Issue) RETURN i.kind, count(*) ORDER BY count(*) D
 <ol>
   <li>Download <code>strata.mcpb</code> from the <a href="https://github.com/openhistorymap/strata/releases/latest">latest release</a>.</li>
   <li>Open it, or drag it onto Claude Desktop's <b>Settings → Extensions</b>.</li>
-  <li>Claude Desktop installs Python and the two dependencies (<code>relate-db</code>, <code>fastmcp</code>) itself.</li>
+  <li>Claude Desktop installs Python and the dependencies (<code>relate-db</code>, <code>fastmcp</code>, and <code>networkx</code>, <code>openpyxl</code> for the matrix readers) itself.</li>
 </ol>
 <h3>Where your data is</h3>
 <p>The extension carries the Kenan Tepe store as a read-only seed and never writes to it. The server picks its store in this order:</p>
@@ -336,6 +378,8 @@ uv run strata query "MATCH (i:Issue) RETURN i.kind, count(*) ORDER BY count(*) D
   <li><code>Documents/Strata/strata.rl</code>. On first run it is created from the seed; after that it is reused, so your edits survive extension updates and the file is yours to see, copy and back up.</li>
 </ol>
 <p>Ask for <code>store_info</code> at any time: it reports the path, why it was chosen, its size, last change and number of edits.</p>
+<h3>Your own matrix</h3>
+<p>Ask Claude to import a matrix file by its path, e.g. <em>"Import ~/Desktop/scavo.sqlite as site scavo"</em>. It is added to the same store, checked, and from then on every tool works on it. All the <a href="#import">formats</a> are available in the extension; nothing else needs installing.</p>
 <h3>Without the extension</h3>
 <p>From a clone, add this to <code>claude_desktop_config.json</code>. <code>STRATA_DB</code> is optional.</p>
 <pre><code>{
@@ -369,7 +413,9 @@ npx -y @anthropic-ai/mcpb pack dist/strata-desktop dist/strata.mcpb</code></pre>
   <tbody>
     <tr><td><code>fetch SITE</code></td><td>Downloads a site from Open Context and normalises it into <code>data/sources/SITE/</code> (Kenan Tepe: about 5 minutes; raw JSON cached in <code>data/raw/</code>).</td></tr>
     <tr><td><code>build [SITE…]</code></td><td>Rebuilds the store from <code>data/sources/</code>, runs every check, and refreshes the viewer's data in <code>web/data/</code> (about 20 s).</td></tr>
-    <tr><td><code>import-matrix PATH --site ID [--name --format --license --license-label --source --source-uri]</code></td><td>Adds a Harris-matrix file, in any format <a href="https://github.com/openhistorymap/harris-mcp">harris-mcp</a> reads, then runs the checks.</td></tr>
+    <tr><td><code>import-matrix PATH --site ID [--name --format --reverse --replace --license --license-label --source --source-uri]</code></td><td>Adds a Harris matrix in any <a href="#import">supported format</a> to the store as a site, then runs the checks. Will not overwrite a site unless <code>--replace</code>.</td></tr>
+    <tr><td><code>convert PATH [-o FILE] [--store FILE.rl] [--site --name --format --reverse …]</code></td><td>Converts a Harris matrix into a checked viewer bundle (<code>NAME.strata.json</code>), in a fresh store of its own; <code>--store</code> keeps that store.</td></tr>
+    <tr><td><code>formats</code></td><td>The matrix formats Strata reads.</td></tr>
     <tr><td><code>check [SITE…]</code></td><td>Recomputes matrix depth, contested edges and issues.</td></tr>
     <tr><td><code>ask QUESTION ARGS [--site --kind --limit]</code></td><td>Named questions (below).</td></tr>
     <tr><td><code>query CYPHER [--params JSON] [--limit N]</code></td><td>Read-only Cypher; the store is opened read-only.</td></tr>
@@ -411,7 +457,7 @@ npx -y @anthropic-ai/mcpb pack dist/strata-desktop dist/strata.mcpb</code></pre>
   </tbody>
 </table>
 <h3>Harris-matrix files</h3>
-<p><code>strata import-matrix</code> reads whatever <a href="https://github.com/openhistorymap/harris-mcp">harris-mcp</a> reads: HMDP JSON, Harris Matrix Composer <code>.hmc</code>/<code>.hmcx</code>, the Harris Matrix Data Package (folder, <code>datapackage.json</code> or zip), CSV and XLSX.</p>
+<p>See <a href="#import">Your own matrices</a> for the twelve formats <code>convert</code> and <code>import-matrix</code> read and how each is interpreted.</p>
 <h3>Viewer export (<code>strata-web</code>, version 1)</h3>
 <p>The browser can't open <code>.rl</code>, so the graph travels as JSON. A <b>part</b> is:</p>
 <pre><code>{
@@ -426,8 +472,8 @@ npx -y @anthropic-ai/mcpb pack dist/strata-desktop dist/strata.mcpb</code></pre>
 <p>A <b>bundle</b> (<code>.strata.json</code>) is one site in one file, for local files and URLs:</p>
 <pre><code>{"format": "strata-web", "version": 1, "dataset": {…as in datasets.json}, "parts": [core, finds]}</code></pre>
 <p>Make one from any excavation Strata can import:</p>
-<pre><code>uv run strata --db my-dig.rl import-matrix my.hmcx --site my-dig --name "My dig"
-uv run strata --db my-dig.rl export-web --site my-dig --bundle my-dig.strata.json</code></pre>
+<pre><code>uv run strata convert my.hmcx -o my-dig.strata.json                       # a Harris matrix, in one step
+uv run strata --db my-dig.rl export-web --site my-dig --bundle my-dig.strata.json   # a site already in a store</code></pre>
 <p>The viewer rebuilds the graph with <code>UNWIND $rows AS r CREATE (n:Label {…})</code> in batches of 1,000. Labels, keys and property names must be plain identifiers; values are passed as parameters, and only <code>http(s)</code> links become clickable.</p>
 </section>
 
@@ -454,7 +500,8 @@ with Store("my-copy.rl") as s:
     <tr><td><code>strata.queries</code></td><td><code>resolve</code>, <code>describe</code>, <code>below</code>, <code>above</code>, <code>relation</code>, <code>date_bracket</code>, <code>provenance</code>, <code>issues</code>, <code>overview</code>, <code>period_sequence</code>, <code>explain_issue</code></td></tr>
     <tr><td><code>strata.edits</code></td><td><code>propose_relation</code>, <code>resolve_order</code>, <code>assign_phase</code>, <code>add_note</code>, <code>history</code>, <code>revert</code>, <code>Rejected</code></td></tr>
     <tr><td><code>strata.checks</code></td><td><code>run_checks</code>, <code>compute_depth</code>, <code>mark_redundant</code>, <code>contest</code></td></tr>
-    <tr><td><code>strata.importers</code></td><td>Open Context fetch and normalise, CSV and Harris-matrix loaders, <code>import_site</code></td></tr>
+    <tr><td><code>strata.importers</code></td><td>Open Context fetch and normalise, <code>import_site</code>; <code>matrices</code> (<code>read</code>, <code>detect</code>, <code>formats</code>, <code>to_source</code>), <code>verbs.verb</code>, the readers in <code>formats/</code></td></tr>
+    <tr><td><code>strata.convert</code></td><td><code>import_matrix</code>, <code>convert</code></td></tr>
     <tr><td><code>strata.web_export</code></td><td><code>export_web</code>, <code>export_bundle</code></td></tr>
     <tr><td><code>strata.desktop</code></td><td><code>resolve_store</code>, the extension's entry point</td></tr>
   </tbody>

@@ -76,7 +76,7 @@ def read_source(source: Path) -> dict[str, Any]:
     Harris-matrix file in the directory, read with harris-mcp instead of CSVs."""
     site = json.loads((source / "site.json").read_text())
     if site.get("matrix"):
-        from .harris import matrix_source
+        from .matrices import matrix_source
         return matrix_source(source / site["matrix"], site, site.get("matrix_format", "auto"))
 
     def table(name: str) -> list[dict]:
