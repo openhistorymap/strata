@@ -4,6 +4,10 @@ import { GraphClient } from "./db.js?v=dev";
 import { Q, EXAMPLES } from "./queries.js?v=dev";
 import { layout } from "./matrix.js?v=dev";
 import { registerTools } from "./webmcp.js?v=dev";
+import { initAssistant, takeSignInCallback } from "./assistant.js?v=dev";
+
+// Back from signing in on openrouter.ai: restore the address before boot() reads it.
+const signedIn = takeSignInCallback();
 
 // ------------------------------------------------------------------ helpers --
 
@@ -790,14 +794,17 @@ function notify(text) {
   toastTimer = setTimeout(() => { el.hidden = true; }, 4000);
 }
 
+// What the tools (WebMCP, and the "Ask a model" panel) may use of the page.
+const pageApi = {
+  db: () => db,
+  state: () => state,
+  source: () => state.source,
+  catalogue: () => catalogue,
+  goTo, showTrench, openBuiltin, openUrl, openConsole, notify,
+};
+
 async function startWebMCP() {
-  const reg = await registerTools({
-    db: () => db,
-    state: () => state,
-    source: () => state.source,
-    catalogue: () => catalogue,
-    goTo, showTrench, openBuiltin, openUrl, openConsole, notify,
-  });
+  const reg = await registerTools(pageApi);
   const badge = $("#webmcp");
   if (reg && reg.count) {
     badge.hidden = false;
@@ -808,3 +815,4 @@ async function startWebMCP() {
 
 boot();
 startWebMCP().catch((e) => console.warn("WebMCP:", e));
+initAssistant(pageApi, { signedIn });

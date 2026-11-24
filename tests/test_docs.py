@@ -44,3 +44,24 @@ def test_every_issue_kind_is_documented():
 def test_every_matrix_format_is_documented():
     from strata.importers.matrices import formats
     assert not [f.name for f in formats() if f"<code>{f.name}</code>" not in DOCS]
+
+
+def test_harris_tools_offered_by_the_viewer_exist_and_only_read():
+    """web/harris.js offers some harris-mcp tools to the model: they must exist, and must not edit."""
+    from fastmcp import Client
+    from harris_mcp.server import mcp
+
+    js = (ROOT / "web" / "harris.js").read_text()
+    offered = re.findall(r'"([a-z_]+)"', js[js.index("const READ_ONLY"):js.index("];", js.index("const READ_ONLY"))])
+
+    async def tools():
+        async with Client(mcp) as c:
+            return {t.name: t for t in await c.list_tools()}
+
+    have = asyncio.run(tools())
+    assert len(offered) >= 20
+    assert not [n for n in offered if n not in have], "harris-mcp has no such tool"
+    edits = {"add_context", "update_context", "delete_context", "add_relation", "remove_relation", "assign_phase",
+             "mark_contemporary", "attach_note", "revert", "save_matrix", "link_ohm_feature", "assert_correspondence"}
+    assert not edits & set(offered)
+    assert "harris_open" in js and "<code>harris_open</code>" in DOCS

@@ -44,7 +44,8 @@
     <li><a href="#reasoning">Stratigraphic reasoning</a></li>
     <li><a href="#issues">Issue kinds</a></li>
     <li><a href="#viewer">The browser viewer</a></li>
-    <li><a href="#webmcp">Browser agents (WebMCP)</a></li>
+    <li><a href="#ask">Ask a model (OpenRouter)</a></li>
+<li><a href="#webmcp">Browser agents (WebMCP)</a></li>
     <li><a href="#mcp">MCP server and tools</a></li>
     <li><a href="#edits">Edits, history and revert</a></li>
     <li><a href="#desktop">Claude Desktop</a></li>
@@ -289,6 +290,23 @@ uv run strata formats                               # what can be read</code></p
 <p>Relate's WASM build loads about 3,000 nodes or relationships a second. The core graph (sites, trenches, units, periods, issues, the matrix) takes about five seconds and is usable at once; finds, taxa and abutments follow in about ten more. Queries take milliseconds.</p>
 </section>
 
+<section id="ask">
+<h2>Ask a model (OpenRouter)</h2>
+<p><b>Ask a model</b> in the viewer's header opens a panel where you ask about the excavation in your own words. A model you choose on <a href="https://openrouter.ai/">OpenRouter</a> answers by calling the page's own tools (the <a href="#webmcp">WebMCP tools</a> below, against the graph in your tab), and each call is shown as it happens: open one to see its arguments and result, and open a Cypher call in the console. Units in an answer are links to the matrix.</p>
+<h3>Signing in</h3>
+<ul>
+  <li><b>Sign in with OpenRouter</b> uses OpenRouter's <a href="https://openrouter.ai/docs/guides/overview/auth/oauth">OAuth PKCE</a> flow: you authorise the page on openrouter.ai and come back with a key of your own, billed to your OpenRouter credits. A $5 limit is suggested on the consent page; you can change it there.</li>
+  <li>You can paste an existing key instead (<b>Use an API key instead</b>).</li>
+  <li>The key is kept in your browser's local storage and sent only to OpenRouter. Strata has no server. <b>Sign out</b> makes the browser forget the key and links to the key on OpenRouter, where you can delete it.</li>
+</ul>
+<h3>Models</h3>
+<p>The picker lists every OpenRouter model that supports tool use, with its price per million tokens; a few are suggested at the top. Claude Sonnet 5.5 is the default. The panel shows what the conversation has cost so far.</p>
+<h3>harris-mcp</h3>
+<p>Tick <b>Also use harris-mcp</b> to add the analysis tools of <a href="https://github.com/openhistorymap/harris-mcp">harris-mcp</a>, the Harris-matrix server at <code>harris.openhistorymap.org</code>: <code>harris_open</code> and 22 read-only tools such as <code>harris_phase_sequence</code>, <code>harris_anomalies</code>, <code>harris_topological_layers</code> and <code>harris_between</code>. The first time the model uses one, the page sends the trench on screen (or, with <code>harris_open</code>, another trench or the whole site) to the server as a Harris Matrix Data Package: units named by path, with type, period, phase (the period when no phase was recorded), trench and note, and the relations Strata accepted. Contested claims are not sent. harris-mcp's editing tools are not offered: they would change only the server's copy.</p>
+<h3>What leaves your browser</h3>
+<p>Your question, the page's description of the graph, and every tool result the model asks for go to OpenRouter and the model's provider. With harris-mcp on, the matrix described above also goes to <code>harris.openhistorymap.org</code>. This includes parts of a local file you opened, which otherwise never leaves the tab; the panel says so when a local file is loaded.</p>
+</section>
+
 <section id="webmcp">
 <h2>Browser agents (WebMCP)</h2>
 <p>The viewer registers tools with <a href="https://webmachinelearning.github.io/webmcp/">WebMCP</a>, so an AI agent running in your browser can work with the graph in the page. It uses <code>document.modelContext.registerTool</code> from the W3C draft, or <code>navigator.modelContext</code> where the browser provides that instead (Chrome 146+, the MCP-B extension). A <b>WebMCP · 9 tools</b> badge appears in the header when the browser supports it, and a toast shows each call an agent makes.</p>
@@ -306,7 +324,7 @@ uv run strata formats                               # what can be read</code></p
     <tr><td><code>strata_open_dataset</code></td><td>Replaces the graph with a built-in dataset or one at a URL (marked consequential).</td><td><code>dataset?</code> or <code>url?</code></td></tr>
   </tbody>
 </table>
-<p>Units are named by full path. A bare label works when it is unique, or unique in the trench on screen; otherwise the tool returns the candidates. Browser agents never edit the graph: the page's tools only read or navigate. Edits are what the MCP server is for.</p>
+<p>Units are named by full path. A bare label works when it is unique, or unique in the trench on screen; otherwise the tool returns the candidates. Browser agents never edit the graph: the page's tools only read or navigate. Edits are what the MCP server is for. The <a href="#ask">Ask a model</a> panel uses the same tools, except <code>strata_open_dataset</code>.</p>
 </section>
 
 <section id="mcp">
@@ -534,6 +552,7 @@ python3 -m http.server -d web 8000                                         # the
   <li><b>Relate 1.2 query shapes.</b> Strata avoids a few patterns that are slow or unsupported in this version: <code>shortestPath</code> with a filter on its relationships hangs when no path exists (hence <code>:CONTESTED</code> as its own type); <code>shortestPath</code> with a minimum length; nested pattern comprehensions; and, in the WASM build, <code>COUNT { … }</code> over a variable-length path.</li>
   <li><b>Dates are field phasing.</b> Kenan Tepe's periods are tentative. A period inversion is a question for a specialist, not an error in itself.</li>
   <li><b>WebMCP is new.</b> The API is a draft and changes between browser versions. The viewer supports both current spellings.</li>
+  <li><b>Asking a model costs money</b> and answers vary by model. Small models may call tools badly or stop early; the panel gives up after 14 rounds of tool use. Answers are a model's reading of the record, not part of it.</li>
 </ul>
 </section>
 

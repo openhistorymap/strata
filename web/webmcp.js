@@ -9,7 +9,7 @@
 
 const WRITE = /\b(CREATE|MERGE|SET|DELETE|DETACH|REMOVE|DROP|LOAD\s+CSV|FOREACH)\b/i;
 const STRINGS = /'(?:[^'\\]|\\.)*'|"(?:[^"\\]|\\.)*"|`[^`]*`/g;
-const isWrite = (q) => WRITE.test(q.replace(STRINGS, "''"));
+export const isWrite = (q) => WRITE.test(q.replace(STRINGS, "''"));
 
 export function modelContext() {
   return (typeof document !== "undefined" && document.modelContext)
@@ -21,18 +21,16 @@ const ok = (value) => ({ content: [{ type: "text", text: JSON.stringify(value, n
 const fail = (message) => ({ content: [{ type: "text", text: message }], isError: true });
 
 /**
- * Register the viewer's tools. `app` gives access to the page:
+ * The viewer's tools, shared by WebMCP and the in-page assistant (assistant.js).
+ * `app` gives access to the page:
  *   db()          the current GraphClient
  *   source()      what is loaded ({kind, name|url|id, dataset})
  *   catalogue()   built-in datasets
  *   goTo({path|uid|trenchName}), showTrench(uid), openBuiltin(id), openUrl(url),
  *   openConsole(cypher, params), notify(text)
- * Returns {count, api} or null when the browser has no WebMCP.
+ * Each tool's execute() never throws: errors come back as an isError result.
  */
-export async function registerTools(app) {
-  const mc = modelContext();
-  if (!mc || typeof mc.registerTool !== "function") return null;
-
+export function buildTools(app) {
   const rows = async (cypher, params) => app.db().rows(cypher, params);
 
   async function resolveUnit(ref) {
@@ -238,23 +236,29 @@ export async function registerTools(app) {
     },
   ];
 
+  return tools.map((tool) => ({
+    ...tool,
+    async execute(input = {}, ...rest) {
+      app.notify(`${tool.title}${input && (input.unit || input.a) ? ` · ${input.unit || `${input.a} ↔ ${input.b}`}` : ""}`);
+      try { return await tool.execute(input || {}, ...rest); } catch (e) { return fail(String((e && e.message) || e)); }
+    },
+  }));
+}
+
+/** Offer the tools to AI agents in the browser. Returns {count, names} or null without WebMCP. */
+export async function registerTools(app) {
+  const mc = modelContext();
+  if (!mc || typeof mc.registerTool !== "function") return null;
+  const tools = buildTools(app);
   const controller = new AbortController();
   let count = 0;
-  for (const tool of tools) {
-    const execute = tool.execute;
-    const wrapped = {
-      ...tool,
-      async execute(input = {}, ...rest) {
-        app.notify(`${tool.title}${input && (input.unit || input.a) ? ` · ${input.unit || `${input.a} ↔ ${input.b}`}` : ""}`);
-        try { return await execute(input || {}, ...rest); } catch (e) { return fail(String((e && e.message) || e)); }
-      },
-    };
+  for (const wrapped of tools) {
     try {
       const handle = await mc.registerTool(wrapped, { signal: controller.signal });
       if (handle && typeof handle.unregister === "function") controller.signal.addEventListener("abort", () => handle.unregister());
       count++;
     } catch (e) {
-      console.warn(`WebMCP: could not register ${tool.name}:`, e);
+      console.warn(`WebMCP: could not register ${wrapped.name}:`, e);
     }
   }
   return { count, names: tools.map((t) => t.name), unregister: () => controller.abort() };

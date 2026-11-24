@@ -156,6 +156,10 @@ docker run --rm -v "$PWD":/app -w /app node:22-slim node tests/web_smoke.mjs    
 docker run --rm -v "$PWD":/app -w /app node:22-slim node tests/web_smoke.mjs my-dig.strata.json    # a bundle
 ```
 
+### Ask a model in the browser
+
+**Ask a model** in the viewer's header lets you ask about the excavation in your own words. Sign in with [OpenRouter](https://openrouter.ai/) (OAuth PKCE: the key is your own, billed to your credits, and kept in your browser), pick any model that supports tool use, and it answers by calling the page's own tools against the graph in your tab, showing each Cypher query it runs. Tick **Also use harris-mcp** to add the analysis tools of [harris-mcp](https://github.com/openhistorymap/harris-mcp) (phase sequence, anomalies, topological layers…): the page then sends the trench's matrix to `harris.openhistorymap.org`. Details, including what leaves your browser: [docs](https://www.openhistorymap.org/strata/docs/#ask).
+
 ### Give it to an agent
 
 Strata's MCP server adds domain tools on top of Cypher, such as `describe`, `relation`, `date_bracket`, `provenance`, `issues` and `explain_issue`. It also has checked edits:

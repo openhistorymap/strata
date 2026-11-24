@@ -38,6 +38,7 @@
   </div>
   <nav class="links">
     <span class="webmcp" id="webmcp" hidden></span>
+    <button type="button" id="ask-toggle" class="ghost ask-toggle" aria-controls="assistant" aria-expanded="false" title="Ask a model about this excavation (OpenRouter)">Ask a model</button>
     <button type="button" id="console-toggle" class="ghost" title="Cypher console (Ctrl+`)">Cypher console</button>
     <button type="button" id="theme" class="ghost">◐ Auto</button>
     <a href="docs/" class="ghost">Docs</a>
@@ -136,6 +137,15 @@ ORDER BY n DESC</textarea>
     <code>uv run strata convert my-matrix.lst</code> → <code>my-matrix.strata.json</code>
     (<a href="docs/#import">formats</a>)</p>
 </dialog>
+
+<aside class="assistant" id="assistant" aria-label="Ask a model" hidden>
+  <div class="ask-head">
+    <h2>Ask a model</h2>
+    <span class="ask-via">via OpenRouter · reads the graph in this tab</span>
+    <button type="button" class="ghost small ask-close" aria-label="Close">✕</button>
+  </div>
+  <div class="ask-body"></div>
+</aside>
 
 <div class="agent-toast" id="agent-toast" role="status" aria-live="polite" hidden></div>
 
